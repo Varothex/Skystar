@@ -40,6 +40,9 @@ bool joyMovedX = false;
 bool joyMovedY = false;
 int xIndex = 0;
 int yIndex = 0;
+bool doneOne = false;
+bool doneThree = false;
+bool doneFive = false;
 
 // EEPROM
 int highscore = 0;
@@ -72,7 +75,7 @@ void setup()
 void loop() 
 {
   readJoystick();
-  readClick();
+  readClick(100);
 }
 
 void displayMenu()
@@ -217,7 +220,7 @@ void readJoystick()
     }
 }
 
-void readClick()
+int readClick(int mode)
 {
   swState = digitalRead(pinSW);
 
@@ -231,28 +234,51 @@ void readClick()
     if (swState != buttonState)
     {
       buttonState = swState;
-      if (buttonState == LOW)
+      if (buttonState == LOW) 
       {
-        if (xIndex == 0)
+        if (mode == 100)
         {
-          if (yIndex == 0)
+          if (xIndex == 0)
           {
-            startGame();
+            if (yIndex == 0)
+            {
+              startGame();
+            }
+            else
+            {
+              score();
+            }
           }
           else
           {
-            score();
+            if (yIndex == 0)
+            {
+              settings();
+            }
+            else
+            {
+              about();
+            }
           }
         }
         else
         {
-          if (yIndex == 0)
+//          Serial.print(mode);
+          for (int col = 0; col < 6; col++)
           {
-            settings();
-          }
-          else
-          {
-            about();
+            lc.setLed(0, mode, col, false);
+            if (mode == 1)
+            {
+              doneOne = true;
+            }
+            if (mode == 3)
+            {
+              doneThree = true;
+            }
+            if (mode == 5)
+            {
+              doneFive = true;
+            }
           }
         }
       }
@@ -264,14 +290,18 @@ void readClick()
 void startGame()
 {
   bool shipState = false;
+  bool playing = true;
   int shipLin = 4;
   int shipCol = 7;
+  doneOne = false;
+  doneThree = false;
+  doneFive = false;
 
   lc.setLed(0, 1, 2, true);
-  lc.setLed(0, 5, 1, true);
   lc.setLed(0, 3, 3, true);
-  
-  while (true)
+  lc.setLed(0, 5, 1, true);
+
+  while (playing)
   {
     unsigned int elapsedTime = millis();
     if (elapsedTime - lastChanged > 500)
@@ -283,6 +313,8 @@ void startGame()
       shipState = !shipState;
       lastChanged = elapsedTime;
     }
+
+    readClick(shipLin);
 
     yValue = analogRead(pinY);
     if (yValue < 250 && !joyMovedY)
@@ -313,9 +345,13 @@ void startGame()
     {
       joyMovedY = false;
     }
+
+    if (doneOne == true and doneThree == true and doneFive == true)
+    {
+      lc.clearDisplay(0);
+      playing = false;
+    }
   } 
-  
-  lc.clearDisplay(0);
 }
 
 void writeEEPROM(int score) 
@@ -373,8 +409,6 @@ void settings()
 
 void about()
 {
-  bool aboutBack = false;
-  
   lcd.clear();
   lcd.setCursor(1, 0);
   lcd.print("Skystar made by Mihai Vartic.");
