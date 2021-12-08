@@ -263,7 +263,59 @@ void readClick()
 
 void startGame()
 {
-  Serial.println("Game on!");
+  bool shipState = false;
+  int shipLin = 4;
+  int shipCol = 7;
+
+  lc.setLed(0, 1, 2, true);
+  lc.setLed(0, 5, 1, true);
+  lc.setLed(0, 3, 3, true);
+  
+  while (true)
+  {
+    unsigned int elapsedTime = millis();
+    if (elapsedTime - lastChanged > 500)
+    {
+      lc.setLed(0, shipLin, shipCol - 1, !shipState);
+      lc.setLed(0, shipLin, shipCol, !shipState);
+      lc.setLed(0, shipLin + 1, shipCol, !shipState);
+      lc.setLed(0, shipLin - 1, shipCol, !shipState);
+      shipState = !shipState;
+      lastChanged = elapsedTime;
+    }
+
+    yValue = analogRead(pinY);
+    if (yValue < 250 && !joyMovedY)
+    {
+      lc.setLed(0, shipLin, shipCol - 1, 0);
+      lc.setLed(0, shipLin, shipCol, 0);
+      lc.setLed(0, shipLin + 1, shipCol, 0);
+      lc.setLed(0, shipLin - 1, shipCol, 0);
+      if (shipLin < 7)
+      {
+        shipLin++;
+      }
+      joyMovedY = true;
+    }
+    else if (yValue > 750 && !joyMovedY)
+    {
+      lc.setLed(0, shipLin, shipCol - 1, 0);
+      lc.setLed(0, shipLin, shipCol, 0);
+      lc.setLed(0, shipLin + 1, shipCol, 0);
+      lc.setLed(0, shipLin - 1, shipCol, 0);
+      if (shipLin > 0)
+      {
+        shipLin--;
+      }
+      joyMovedY = true;
+    }
+    if (250 <= yValue && yValue <= 750) 
+    {
+      joyMovedY = false;
+    }
+  } 
+  
+  lc.clearDisplay(0);
 }
 
 void writeEEPROM(int score) 
