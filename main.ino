@@ -9,6 +9,13 @@ const int d5 = 4;
 const int d6 = 3;
 const int d7 = 2;
 LiquidCrystal lcd(RS, enable, d4, d5, d6, d7);
+int lastDebounceTimer = 0;
+int debounceInterval = 50;
+unsigned int lastChanged = 0;
+bool startBlink = 0;
+bool scoreBlink = 0;
+bool settingsBlink = 0;
+bool aboutBlink = 0;
 
 // matrix + joystick
 const int dinPin = 12;
@@ -24,6 +31,9 @@ const int pinY = A1; // A1 - analog pin connected to Y output
 bool swState = HIGH;
 bool swStateLast = HIGH;
 bool buttonState = HIGH;
+//bool swStateScore = HIGH;
+//bool swStateLastScore = HIGH;
+//bool buttonStateScore = HIGH;
 int xValue = 0;
 int yValue = 0;
 bool joyMovedX = false;
@@ -31,33 +41,20 @@ bool joyMovedY = false;
 int xIndex = 0;
 int yIndex = 0;
 
-// other
-bool menu = false;
-int lastDebounceTimer = 0;
-int debounceInterval = 50;
-
-unsigned int lastChanged = 0;
-bool startBlink = 0;
-bool scoreBlink = 0;
-bool settingsBlink = 0;
-bool aboutBlink = 0;
-
 void setup() 
 {
-  // set up the LCD's number of columns and rows:
   lcd.begin(16, 2);
   
-  // Greetings message.
+  // Greetings message
   lcd.setCursor(3, 0);
   lcd.print("Welcome to");
   lcd.setCursor(4, 1);
   lcd.print("Skystar!");
+  delay(1500);
+  displayMenu();
 
-  // joystick
   pinMode(pinSW, INPUT_PULLUP);
   
-  // matrice
-  // the zero refers to the MAX7219 number, it is zero for 1 chip
   lc.shutdown(0, false); // turn off power saving, enables display
   lc.setIntensity(0, 2); // sets brightness (0~15 possible values)
   lc.clearDisplay(0);// clear screen
@@ -66,58 +63,9 @@ void setup()
 
 void loop() 
 {
-  swState = digitalRead(pinSW);
-  
-  if (swState == 0 and menu == false)
-  {
-    displayMenu();
-    menu = true;
-    delay(1000);
-  }
+  readJoystick();
 
-  if (menu)
-  {
-    readJoystick();
-
-    if (swState != swStateLast)
-    {
-      lastDebounceTimer = millis();
-    }
-  
-    if (millis() - lastDebounceTimer > debounceInterval)
-    {
-      if (swState != buttonState)
-      {
-        buttonState = swState;
-        if (buttonState == LOW)
-        {
-          if (xIndex == 0)
-          {
-            if (yIndex == 0)
-            {
-              startGame();
-            }
-            else
-            {
-              score();
-            }
-          }
-          else
-          {
-            if (yIndex == 0)
-            {
-              settings();
-            }
-            else
-            {
-              about();
-            }
-          }
-        }
-      }
-    }
-    swStateLast = swState;
-  }
+  readClick();
 }
 
 void displayMenu()
@@ -262,6 +210,50 @@ void readJoystick()
     }
 }
 
+void readClick()
+{
+  swState = digitalRead(pinSW);
+
+  if (swState != swStateLast)
+  {
+    lastDebounceTimer = millis();
+  }
+  
+  if (millis() - lastDebounceTimer > debounceInterval)
+  {
+    if (swState != buttonState)
+    {
+      buttonState = swState;
+      if (buttonState == LOW)
+      {
+        if (xIndex == 0)
+        {
+          if (yIndex == 0)
+          {
+            startGame();
+          }
+          else
+          {
+            score();
+          }
+        }
+        else
+        {
+          if (yIndex == 0)
+          {
+            settings();
+          }
+          else
+          {
+            about();
+          }
+        }
+      }
+    }
+  }
+  swStateLast = swState;
+}
+
 void startGame()
 {
   Serial.println("Game on!");
@@ -269,7 +261,34 @@ void startGame()
 
 void score()
 {
-  Serial.println("score board");
+  bool scoreBack = false;
+  
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("Highest score: 0");
+
+  while(scoreBack == false)
+  {
+    swState = digitalRead(pinSW);
+  
+    if (swState != swStateLast)
+    {
+      lastDebounceTimer = millis();
+    }
+    if (millis() - lastDebounceTimer > debounceInterval)
+    {
+      if (swState != buttonState)
+      {
+        buttonState = swState;
+        if (buttonState == LOW)
+        {
+          scoreBack = true;
+          displayMenu();
+        }
+      }
+    }
+    swStateLast = swState;
+  }
 }
 
 void settings()
@@ -279,5 +298,19 @@ void settings()
 
 void about()
 {
-  Serial.println("about");
+  bool aboutBack = false;
+  
+  lcd.clear();
+  lcd.setCursor(1, 0);
+  lcd.print("Skystar made by Mihai Vartic.");
+  lcd.setCursor(1, 1);
+  lcd.print("Github: Varothex/Skystar");
+    
+  for (int positionCounter = 0; positionCounter < 24; positionCounter++) 
+  {
+    lcd.scrollDisplayLeft();
+    delay(750);
+  }
+    
+  displayMenu();
 }
