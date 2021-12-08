@@ -46,6 +46,7 @@ bool doneFive = false;
 
 // EEPROM
 int highscore = 0;
+int presentScore = 0;
 const byte byteMask = 0xFF;
 const int byteLength = 8;
 
@@ -56,7 +57,7 @@ void setup()
   analogWrite(potentiometer, contrast);
   lcd.begin(16, 2);
 
-  writeEEPROM(highscore);
+//  writeEEPROM(0);
   
   // Greetings message
   lcd.setCursor(3, 0);
@@ -263,21 +264,23 @@ int readClick(int mode)
         }
         else
         {
-//          Serial.print(mode);
           for (int col = 0; col < 6; col++)
           {
             lc.setLed(0, mode, col, false);
-            if (mode == 1)
+            if (mode == 1 and !doneOne)
             {
               doneOne = true;
+              presentScore++;
             }
-            if (mode == 3)
+            if (mode == 3 and !doneThree)
             {
               doneThree = true;
+              presentScore++;
             }
-            if (mode == 5)
+            if (mode == 5 and !doneFive)
             {
               doneFive = true;
+              presentScore++;
             }
           }
         }
@@ -296,6 +299,7 @@ void startGame()
   doneOne = false;
   doneThree = false;
   doneFive = false;
+  presentScore = 0;
 
   lc.setLed(0, 1, 2, true);
   lc.setLed(0, 3, 3, true);
@@ -348,7 +352,19 @@ void startGame()
 
     if (doneOne == true and doneThree == true and doneFive == true)
     {
+      if (presentScore > highscore)
+      {
+        highscore = presentScore;
+        writeEEPROM(highscore);
+      }
       lc.clearDisplay(0);
+      lcd.clear();
+      lcd.setCursor(3, 0);
+      lcd.print("Good job!");
+      lcd.setCursor(1, 1);
+      lcd.print("Level 1 Cleared");
+      delay(1500);
+      displayMenu();
       playing = false;
     }
   } 
