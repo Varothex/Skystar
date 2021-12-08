@@ -1,14 +1,17 @@
 #include <LiquidCrystal.h>
-#include "LedControl.h"
+#include <LedControl.h>
+#include <EEPROM.h>
 
 // LCD
 const int RS = 9;
 const int enable = 8;
-const int d4 = 5;
+const int d4 = 7;
+const int potentiometer = 5;
 const int d5 = 4;
 const int d6 = 3;
 const int d7 = 2;
 LiquidCrystal lcd(RS, enable, d4, d5, d6, d7);
+int contrast = 90;
 int lastDebounceTimer = 0;
 int debounceInterval = 50;
 unsigned int lastChanged = 0;
@@ -38,9 +41,19 @@ bool joyMovedY = false;
 int xIndex = 0;
 int yIndex = 0;
 
+// EEPROM
+int highscore = 0;
+const byte byteMask = 0xFF;
+const int byteLength = 8;
+
 void setup() 
 {
+  pinMode(pinSW, INPUT_PULLUP);
+
+  analogWrite(potentiometer, contrast);
   lcd.begin(16, 2);
+
+  writeEEPROM(highscore);
   
   // Greetings message
   lcd.setCursor(3, 0);
@@ -49,8 +62,6 @@ void setup()
   lcd.print("Skystar!");
   delay(1500);
   displayMenu();
-
-  pinMode(pinSW, INPUT_PULLUP);
   
   lc.shutdown(0, false); // turn off power saving, enables display
   lc.setIntensity(0, 2); // sets brightness (0~15 possible values)
@@ -255,13 +266,29 @@ void startGame()
   Serial.println("Game on!");
 }
 
+void writeEEPROM(int score) 
+{
+  byte firstByte = (score >> byteLength) & byteMask;
+  byte secondByte = score & byteMask;
+  EEPROM.update(0, firstByte);
+  EEPROM.update(1, secondByte);
+}
+
+int readEEPROM() 
+{
+  byte firstByte = EEPROM.read(0);
+  byte secondByte = EEPROM.read(1);
+  return (firstByte << byteLength) + secondByte;
+}
+
 void score()
 {
   bool scoreBack = false;
   
   lcd.clear();
   lcd.setCursor(0, 0);
-  lcd.print("Highest score: 0");
+  lcd.print("Highest score:");
+  lcd.print(readEEPROM());
 
   while(scoreBack == false)
   {
