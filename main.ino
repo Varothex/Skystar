@@ -64,7 +64,6 @@ void setup()
 void loop() 
 {
   readJoystick();
-
   readClick();
 }
 
