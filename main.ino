@@ -2,6 +2,17 @@
 #include <LedControl.h>
 #include <EEPROM.h>
 
+const int button = 13;
+bool buttonPressed = 0;
+
+int alphabetCounter = 0;
+char alphabet[] = {'a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z'};
+char name[4] = {'a', 'b' , 'c'};
+int cursor = 0;
+int cursorMode = 101;
+bool done = false;
+bool settingsBack = false;
+
 // LCD
 const int RS = 9;
 const int enable = 8;
@@ -19,6 +30,7 @@ bool startBlink = 0;
 bool scoreBlink = 0;
 bool settingsBlink = 0;
 bool aboutBlink = 0;
+bool doneBlink = 0;
 
 // matrix + joystick
 const int dinPin = 12;
@@ -53,6 +65,7 @@ const int byteLength = 8;
 void setup() 
 {
   pinMode(pinSW, INPUT_PULLUP);
+  pinMode(button, INPUT_PULLUP);
 
   analogWrite(potentiometer, contrast);
   lcd.begin(16, 2);
@@ -237,6 +250,7 @@ int readClick(int mode)
       buttonState = swState;
       if (buttonState == LOW) 
       {
+        // main menu
         if (mode == 100)
         {
           if (xIndex == 0)
@@ -262,6 +276,35 @@ int readClick(int mode)
             }
           }
         }
+
+        // setting name
+        if (mode == 101)
+        {
+          name[0] = alphabet[alphabetCounter];
+          cursor = 1;
+          cursorMode = 102;
+        }
+        if (mode == 102)
+        {
+          name[1] = alphabet[alphabetCounter];
+          cursor = 2;
+          cursorMode = 103;
+        }
+        if (mode == 103)
+        {
+          name[2] = alphabet[alphabetCounter];
+//          cursor = 7;
+          cursorMode = 104;
+        }
+        if (mode == 105)
+        {
+          Serial.println(name);
+          done = true;
+          settingsBack = true;
+          displayMenu();
+        }
+
+        // shoot
         else
         {
           for (int col = 0; col < 6; col++)
@@ -420,7 +463,79 @@ void score()
 
 void settings()
 {
-  Serial.println("settings");
+  // starting level
+  // lcd contrast
+  // matrix brightness
+
+  settingsBack = false;
+
+  cursor = 0;
+  cursorMode = 101;
+  done = false;
+  
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("Select a name:");
+  lcd.setCursor(0, 1);
+  lcd.print("___");
+  lcd.setCursor(0, 1);
+  
+  while (!settingsBack)
+  {
+    xValue = analogRead(pinX);
+    yValue = analogRead(pinY);
+    swState = digitalRead(pinSW);
+//    int buttonvalue = analogRead(button);
+  
+    if (xValue < 250)
+    {
+      alphabetCounter--;
+      if (alphabetCounter < 0)
+      {
+        alphabetCounter = 25;
+      }
+    }
+
+    if (xValue > 750)
+    {
+      alphabetCounter++;
+      if (alphabetCounter > 25)
+      {
+        alphabetCounter = 0;
+      }
+    }
+
+//    delay(250);
+    lcd.print(alphabet[alphabetCounter]);
+    
+    readClick(cursorMode);
+    lcd.setCursor(cursor, 1);
+
+    if (cursorMode == 104)
+    {
+//      lcd.print("done?");
+      while (!done)
+      {
+        unsigned int elapsedTime = millis();
+        if (elapsedTime - lastChanged > 250)
+        {
+          lcd.setCursor(7, 1);
+          if (doneBlink == 0)
+          {
+            lcd.print("     ");
+            doneBlink = 1;
+          }
+          else
+          {
+            lcd.print("done?");
+            doneBlink = 0;
+          } 
+          lastChanged = elapsedTime;
+        }
+        readClick(105);
+      }
+    }
+  }
 }
 
 void about()
