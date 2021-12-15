@@ -5,13 +5,17 @@
 const int button = 13;
 bool buttonPressed = 0;
 
+// name
 int alphabetCounter = 0;
 char alphabet[] = {'a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z'};
 char name[4] = {'a', 'b' , 'c'};
 int cursor = 0;
-int cursorMode = 101;
+int cursorMode = 2001;
+
 bool done = false;
+bool nameBack = false;
 bool settingsBack = false;
+bool contrastBack = false;
 
 // LCD
 const int RS = 9;
@@ -23,6 +27,8 @@ const int d6 = 3;
 const int d7 = 2;
 LiquidCrystal lcd(RS, enable, d4, d5, d6, d7);
 int contrast = 90;
+
+// blink
 int lastDebounceTimer = 0;
 int debounceInterval = 50;
 unsigned int lastChanged = 0;
@@ -30,6 +36,10 @@ bool startBlink = 0;
 bool scoreBlink = 0;
 bool settingsBlink = 0;
 bool aboutBlink = 0;
+bool nameBlink = 0;
+bool brightnessBlink = 0;
+bool contrastBlink = 0;
+bool backBlink = 0;
 bool doneBlink = 0;
 
 // matrix + joystick
@@ -52,6 +62,8 @@ bool joyMovedX = false;
 bool joyMovedY = false;
 int xIndex = 0;
 int yIndex = 0;
+
+// game
 bool doneOne = false;
 bool doneThree = false;
 bool doneFive = false;
@@ -88,8 +100,8 @@ void setup()
 
 void loop() 
 {
-  readJoystick();
-  readClick(100);
+  readJoystickMenu();
+  readClick(1000);
 }
 
 void displayMenu()
@@ -105,7 +117,7 @@ void displayMenu()
     lcd.print("About");
 }
 
-void readJoystick()
+void readJoystickMenu()
 {
     xValue = analogRead(pinX);
     yValue = analogRead(pinY);
@@ -251,7 +263,7 @@ int readClick(int mode)
       if (buttonState == LOW) 
       {
         // main menu
-        if (mode == 100)
+        if (mode == 1000)
         {
           if (xIndex == 0)
           {
@@ -268,6 +280,8 @@ int readClick(int mode)
           {
             if (yIndex == 0)
             {
+              settingsBack = false;
+              displaySettings();
               settings();
             }
             else
@@ -277,32 +291,74 @@ int readClick(int mode)
           }
         }
 
+        // settings menu
+        if (mode == 2000)
+        {
+          if (xIndex == 0)
+          {
+            if (yIndex == 0)
+            {
+              nameSettings();
+            }
+            else
+            {
+//              brightnessSettings();
+            }
+          }
+          else
+          {
+            if (yIndex == 0)
+            {
+              contrastSettings();
+            }
+            else
+            {
+              backSettings();
+            }
+          }
+        }
+        
         // setting name
-        if (mode == 101)
+        if (mode == 2001)
         {
           name[0] = alphabet[alphabetCounter];
           cursor = 1;
-          cursorMode = 102;
+          cursorMode = 2002;
         }
-        if (mode == 102)
+        if (mode == 2002)
         {
           name[1] = alphabet[alphabetCounter];
           cursor = 2;
-          cursorMode = 103;
+          cursorMode = 2003;
         }
-        if (mode == 103)
+        if (mode == 2003)
         {
           name[2] = alphabet[alphabetCounter];
-//          cursor = 7;
-          cursorMode = 104;
+          cursorMode = 2004;
         }
-        if (mode == 105)
+        if (mode == 2005)
         {
-          Serial.println(name);
+//          Serial.println(name);
           done = true;
-          settingsBack = true;
-          displayMenu();
+          nameBack = true;
+          displaySettings();
         }
+
+        if (mode == 2006)
+        {
+          analogWrite(potentiometer, 90);
+        }
+
+        if (mode == 2007)
+        {
+          contrastBack = true;
+          displaySettings();
+        }
+
+        if (100 <= mode and mode <= 999)
+        {
+          analogWrite(potentiometer, mode);
+        } 
 
         // shoot
         else
@@ -461,16 +517,285 @@ void score()
   }
 }
 
+void displaySettings()
+{ 
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("Name");
+  lcd.setCursor(6, 0);
+  lcd.print("Brightness");
+  lcd.setCursor(0, 1);
+  lcd.print("Contrast");
+  lcd.setCursor(10, 1);
+  lcd.print("Back");
+}
+
+void readJoystickSettings()
+{
+    xValue = analogRead(pinX);
+    yValue = analogRead(pinY);
+
+    if ((xValue < 250 or xValue > 750) && !joyMovedX)
+    {
+      if (xIndex == 0) 
+      {
+        xIndex = 1;
+        displaySettings();
+      }
+      else 
+      {
+        xIndex = 0;
+        displaySettings();
+      }
+      joyMovedX = true;
+    }
+    
+    if ((yValue < 250 or yValue > 750) && !joyMovedY)
+    {
+      if (yIndex == 0) 
+      {
+        yIndex = 1;
+        displaySettings();
+      }
+      else 
+      {
+        yIndex = 0;
+        displaySettings();
+      }
+      joyMovedY = true;
+    }
+
+    if (250 <= xValue && xValue <= 750) 
+    {
+      joyMovedX = false;
+    } 
+    
+    if (250 <= yValue && yValue <= 750) 
+    {
+      joyMovedY = false;
+    } 
+
+    if (xIndex == 0)
+    {
+      if (yIndex == 0)
+      {
+        unsigned int elapsedTime = millis();
+        if (elapsedTime - lastChanged > 250)
+        {
+          lcd.setCursor(0, 0);
+          if (nameBlink == 0)
+          {
+            lcd.print("    ");
+            nameBlink = 1;
+          }
+          else
+          {
+            lcd.print("Name");
+            nameBlink = 0;
+          }
+          lastChanged = elapsedTime;
+        }
+      }
+      else
+      {
+        unsigned int elapsedTime = millis();
+        if (elapsedTime - lastChanged > 250)
+        {
+          lcd.setCursor(6, 0);
+          if (brightnessBlink == 0)
+          {
+            lcd.print("          ");
+            brightnessBlink = 1;
+          }
+          else
+          {
+            lcd.print("Brightness");
+            brightnessBlink = 0;
+          }
+          lastChanged = elapsedTime;
+        }
+      }
+     }
+     else
+     {
+      if (yIndex == 0)
+      {
+        unsigned int elapsedTime = millis();
+        if (elapsedTime - lastChanged > 250)
+        {
+          lcd.setCursor(0, 1);
+          if (contrastBlink == 0)
+          {
+            lcd.print("        ");
+            contrastBlink = 1;
+          }
+          else
+          {
+            lcd.print("Contrast");
+            contrastBlink = 0;
+          }
+          lastChanged = elapsedTime;
+        }
+      }
+      else
+      {
+        unsigned int elapsedTime = millis();
+        if (elapsedTime - lastChanged > 250)
+        {
+          lcd.setCursor(10, 1);
+          if (backBlink == 0)
+          {
+            lcd.print("    ");
+            backBlink = 1;
+          }
+          else
+          {
+            lcd.print("Back");
+            backBlink = 0;
+          }
+          lastChanged = elapsedTime;
+        }
+      }
+    }
+}
+
 void settings()
 {
-  // starting level
-  // lcd contrast
-  // matrix brightness
+  while (!settingsBack)
+  {
+    readJoystickSettings();
+    readClick(2000);
+  }
+}
 
-  settingsBack = false;
+void contrastSettings()
+{
+  int contrastLevel = 800;
+  int nameIndex = 0;
+  contrastBack = false;
+
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("Change contrast:");
+  lcd.setCursor(4, 1);
+  lcd.print("Default");
+  lcd.setCursor(12, 1);
+  lcd.print("Back");
+
+  while (!contrastBack)
+  {
+    xValue = analogRead(pinX);
+
+    if (xValue < 250 && !joyMovedX)
+    {
+      nameIndex--;
+      lcd.setCursor(4, 1);
+      lcd.print("Default");
+      lcd.setCursor(12, 1);
+      lcd.print("Back");
+      if (nameIndex < 0)
+      {
+        nameIndex = 2;
+      }
+      joyMovedX = true;
+    }
+
+    if (xValue > 750 && !joyMovedX)
+    {
+      nameIndex++;
+      lcd.setCursor(4, 1);
+      lcd.print("Default");
+      lcd.setCursor(12, 1);
+      lcd.print("Back");
+      if (nameIndex > 2)
+      {
+        nameIndex = 0;
+      }      
+      joyMovedX = true;
+    }
+
+    if (250 <= xValue && xValue <= 750) 
+    {
+      joyMovedX = false;
+    }
+
+    if (nameIndex == 0)
+    {
+      yValue = analogRead(pinY);
+      
+      if (yValue < 250) 
+      {
+        contrastLevel--;
+        if (contrastLevel < 100)
+        {
+          contrastLevel = 999;
+        }
+      }
+
+      if (yValue > 750 and nameIndex == 0)
+      {
+        contrastLevel++;
+        if (contrastLevel > 999)
+        {
+          contrastLevel = 100;
+        }
+      }
+    
+      lcd.setCursor(0, 1);
+      lcd.print(contrastLevel);
+      readClick(contrastLevel);
+    }
+
+    if (nameIndex == 1)
+    {
+      unsigned int elapsedTime = millis();
+      if (elapsedTime - lastChanged > 250)
+      {
+        lcd.setCursor(4, 1);
+        if (doneBlink == 0)
+        {
+          lcd.print("       ");
+          doneBlink = 1;
+        }
+        else
+        {
+          lcd.print("Default");
+          doneBlink = 0;
+        } 
+        lastChanged = elapsedTime;
+      }
+      readClick(2006);
+    }
+
+    if (nameIndex == 2)
+    {
+      unsigned int elapsedTime = millis();
+      if (elapsedTime - lastChanged > 250)
+      {
+        lcd.setCursor(12, 1);
+        if (doneBlink == 0)
+        {
+          lcd.print("    ");
+          doneBlink = 1;
+        }
+        else
+        {
+          lcd.print("Back");
+          doneBlink = 0;
+        } 
+        lastChanged = elapsedTime;
+      }
+      readClick(2007);
+    }
+  }
+}
+
+void nameSettings()
+{
+  nameBack = false;
 
   cursor = 0;
-  cursorMode = 101;
+  cursorMode = 2001;
   done = false;
   
   lcd.clear();
@@ -480,7 +805,7 @@ void settings()
   lcd.print("___");
   lcd.setCursor(0, 1);
   
-  while (!settingsBack)
+  while (!nameBack)
   {
     xValue = analogRead(pinX);
     yValue = analogRead(pinY);
@@ -505,15 +830,13 @@ void settings()
       }
     }
 
-//    delay(250);
     lcd.print(alphabet[alphabetCounter]);
     
     readClick(cursorMode);
     lcd.setCursor(cursor, 1);
 
-    if (cursorMode == 104)
+    if (cursorMode == 2004)
     {
-//      lcd.print("done?");
       while (!done)
       {
         unsigned int elapsedTime = millis();
@@ -532,10 +855,16 @@ void settings()
           } 
           lastChanged = elapsedTime;
         }
-        readClick(105);
+        readClick(2005);
       }
     }
   }
+}
+
+void backSettings()
+{
+  displayMenu();
+  settingsBack = true;
 }
 
 void about()
