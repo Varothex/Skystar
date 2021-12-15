@@ -16,6 +16,8 @@ bool done = false;
 bool nameBack = false;
 bool settingsBack = false;
 bool contrastBack = false;
+bool scoreBack = false;
+bool aboutBack = false;
 
 // LCD
 const int RS = 9;
@@ -62,6 +64,8 @@ bool joyMovedX = false;
 bool joyMovedY = false;
 int xIndex = 0;
 int yIndex = 0;
+
+int positionCounter;
 
 // game
 bool doneOne = false;
@@ -291,6 +295,13 @@ int readClick(int mode)
           }
         }
 
+        // score
+        if (mode == 1999)
+        {
+          scoreBack = true;
+          displayMenu();
+        }
+
         // settings menu
         if (mode == 2000)
         {
@@ -338,7 +349,6 @@ int readClick(int mode)
         }
         if (mode == 2005)
         {
-//          Serial.println(name);
           done = true;
           nameBack = true;
           displaySettings();
@@ -359,6 +369,14 @@ int readClick(int mode)
         {
           analogWrite(potentiometer, mode);
         } 
+
+        // about
+        if (mode == 3000)
+        {
+          positionCounter = 25;
+          aboutBack = true;
+          displayMenu();
+        }
 
         // shoot
         else
@@ -486,7 +504,7 @@ int readEEPROM()
 
 void score()
 {
-  bool scoreBack = false;
+  scoreBack = false;
   
   lcd.clear();
   lcd.setCursor(0, 0);
@@ -495,25 +513,7 @@ void score()
 
   while(scoreBack == false)
   {
-    swState = digitalRead(pinSW);
-  
-    if (swState != swStateLast)
-    {
-      lastDebounceTimer = millis();
-    }
-    if (millis() - lastDebounceTimer > debounceInterval)
-    {
-      if (swState != buttonState)
-      {
-        buttonState = swState;
-        if (buttonState == LOW)
-        {
-          scoreBack = true;
-          displayMenu();
-        }
-      }
-    }
-    swStateLast = swState;
+    readClick(1999);
   }
 }
 
@@ -684,23 +684,9 @@ void contrastSettings()
 
   while (!contrastBack)
   {
-    xValue = analogRead(pinX);
+    yValue = analogRead(pinY);
 
-    if (xValue < 250 && !joyMovedX)
-    {
-      nameIndex--;
-      lcd.setCursor(4, 1);
-      lcd.print("Default");
-      lcd.setCursor(12, 1);
-      lcd.print("Back");
-      if (nameIndex < 0)
-      {
-        nameIndex = 2;
-      }
-      joyMovedX = true;
-    }
-
-    if (xValue > 750 && !joyMovedX)
+    if (yValue < 250 && !joyMovedY)
     {
       nameIndex++;
       lcd.setCursor(4, 1);
@@ -710,34 +696,48 @@ void contrastSettings()
       if (nameIndex > 2)
       {
         nameIndex = 0;
-      }      
-      joyMovedX = true;
+      }
+      joyMovedY = true;
     }
 
-    if (250 <= xValue && xValue <= 750) 
+    if (yValue > 750 && !joyMovedY)
     {
-      joyMovedX = false;
+      nameIndex--;
+      lcd.setCursor(4, 1);
+      lcd.print("Default");
+      lcd.setCursor(12, 1);
+      lcd.print("Back");
+      if (nameIndex < 0)
+      {
+        nameIndex = 2;
+      }      
+      joyMovedY = true;
+    }
+
+    if (250 <= yValue && yValue <= 750) 
+    {
+      joyMovedY = false;
     }
 
     if (nameIndex == 0)
     {
-      yValue = analogRead(pinY);
+      xValue = analogRead(pinX);
       
-      if (yValue < 250) 
-      {
-        contrastLevel--;
-        if (contrastLevel < 100)
-        {
-          contrastLevel = 999;
-        }
-      }
-
-      if (yValue > 750 and nameIndex == 0)
+      if (xValue < 250) 
       {
         contrastLevel++;
         if (contrastLevel > 999)
         {
           contrastLevel = 100;
+        }
+      }
+
+      if (xValue > 750 and nameIndex == 0)
+      {
+        contrastLevel--;
+        if (contrastLevel < 100)
+        {
+          contrastLevel = 999;
         }
       }
     
@@ -869,16 +869,22 @@ void backSettings()
 
 void about()
 {
+  aboutBack = false;
+  
   lcd.clear();
   lcd.setCursor(1, 0);
   lcd.print("Skystar made by Mihai Vartic.");
   lcd.setCursor(1, 1);
   lcd.print("Github: Varothex/Skystar");
-    
-  for (int positionCounter = 0; positionCounter < 24; positionCounter++) 
+
+  while(aboutBack == false)
   {
-    lcd.scrollDisplayLeft();
-    delay(750);
+    for (positionCounter = 0; positionCounter < 24; positionCounter++) 
+    {
+      lcd.scrollDisplayLeft();
+      readClick(3000);
+      delay(750);
+    }
   }
     
   displayMenu();
