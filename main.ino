@@ -119,9 +119,9 @@ void setup()
   
   lc.shutdown(0, false); // turn off power saving, enables display
   lc.setIntensity(0, 2); // sets brightness (0~15 possible values)
-  lc.clearDisplay(0);// clear screen
+  lc.clearDisplay(0); // clear screen
 
-  randomSeed(analogRead(0));
+  randomSeed(analogRead(0)); // random pin
   Serial.begin(9600);
 }
 
