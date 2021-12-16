@@ -31,6 +31,18 @@ const int d7 = 2;
 LiquidCrystal lcd(RS, enable, d4, d5, d6, d7);
 int contrast = 90;
 
+byte heart[8] = 
+{
+  0b00000,
+  0b01010,
+  0b11111,
+  0b11111,
+  0b01110,
+  0b00100,
+  0b00000,
+  0b00000
+};
+
 // blink
 int lastDebounceTimer = 0;
 int debounceInterval = 50;
@@ -71,9 +83,15 @@ int yIndex = 0;
 int positionCounter;
 
 // game
-bool doneOne = false;
-bool doneThree = false;
-bool doneFive = false;
+int level = 1;
+bool lvl1ship1 = true;
+bool lvl1ship2 = true;
+bool lvl1ship3 = true;
+bool lvl2ship1 = true;
+bool lvl2ship2 = true;
+int lvl2ship1poz;
+int lvl2ship2poz;
+unsigned int lastChangedPoz = 0;
 
 // EEPROM
 int highscore = 0;
@@ -102,6 +120,8 @@ void setup()
   lc.shutdown(0, false); // turn off power saving, enables display
   lc.setIntensity(0, 2); // sets brightness (0~15 possible values)
   lc.clearDisplay(0);// clear screen
+
+  randomSeed(analogRead(0));
   Serial.begin(9600);
 }
 
@@ -404,20 +424,36 @@ int readClick(int mode)
           for (int col = 0; col < 6; col++)
           {
             lc.setLed(0, mode, col, false);
-            if (mode == 1 and !doneOne)
+            if (level == 1)
             {
-              doneOne = true;
-              presentScore++;
+              if (mode == 1 and lvl1ship1)
+              {
+                lvl1ship1 = false;
+                presentScore++;
+              }
+              if (mode == 3 and lvl1ship2)
+              {
+                lvl1ship2 = false;
+                presentScore++;
+              }
+              if (mode == 5 and lvl1ship3)
+              {
+                lvl1ship3 = false;
+                presentScore++;
+              }
             }
-            if (mode == 3 and !doneThree)
+            if (level == 2)
             {
-              doneThree = true;
-              presentScore++;
-            }
-            if (mode == 5 and !doneFive)
-            {
-              doneFive = true;
-              presentScore++;
+              if (mode == lvl2ship1poz and lvl2ship1)
+              {
+                lvl2ship1 = false;
+                presentScore += 2;
+              }
+              if (mode == lvl2ship2poz and lvl2ship2)
+              {
+                lvl2ship2 = false;
+                presentScore += 2;
+              }
             }
           }
         }
@@ -429,20 +465,95 @@ int readClick(int mode)
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+void displayGameScreen()
+{
+  lcd.clear();
+  lcd.setCursor(1, 0);
+  lcd.print("Playing level ");
+  lcd.setCursor(15, 0);
+  lcd.print(level);
+
+  lcd.setCursor(1, 1);
+  lcd.print("Life: ");
+  lcd.createChar(0, heart);
+  lcd.setCursor(7, 1);
+  lcd.write((byte)0);
+  lcd.setCursor(8, 1);
+  lcd.write((byte)0);
+  lcd.setCursor(9, 1);
+  lcd.write((byte)0);
+}
+
+void displayVictoryScreen()
+{
+  if (presentScore > highscore)
+  {
+    highscore = presentScore;
+    writeEEPROM(highscore);
+  }
+  lc.clearDisplay(0);
+  lcd.clear();
+  lcd.setCursor(3, 0);
+  lcd.print("Good job!");
+  lcd.setCursor(1, 1);
+  lcd.print("Level ");
+  lcd.print(level);
+  lcd.print(" Cleared");
+  delay(1500);
+  displayMenu();
+}
+
 void startGame()
 {
   bool shipState = false;
   bool playing = true;
   int shipLin = 4;
   int shipCol = 7;
-  doneOne = false;
-  doneThree = false;
-  doneFive = false;
+  int lin, col;
+  int lvl2ship2col;
+
   presentScore = 0;
 
-  lc.setLed(0, 1, 2, true);
-  lc.setLed(0, 3, 3, true);
-  lc.setLed(0, 5, 1, true);
+  displayGameScreen();
+
+  if (level == 1)
+  {
+    lvl1ship1 = true;
+    lvl1ship2 = true;
+    lvl1ship3 = true;
+
+    lc.setLed(0, 1, 1, true);
+    lc.setLed(0, 1, 2, true);
+
+    lc.setLed(0, 3, 2, true);
+    lc.setLed(0, 3, 3, true);
+
+    lc.setLed(0, 5, 0, true);
+    lc.setLed(0, 5, 1, true);
+  }
+
+  if (level == 2)
+  {
+    lvl2ship1 = true;
+    lvl2ship2 = true;
+    
+    col = random(0, 4);
+    lin = random(0, 5);
+
+    lvl2ship1poz = lin;
+
+    lc.setLed(0, lin, col, true);
+    lc.setLed(0, lin, col+1, true);
+
+    col = random(0, 4);
+    lin = random(5, 8);
+
+    lvl2ship2poz = lin;
+    lvl2ship2col = col;
+
+    lc.setLed(0, lin, col, true);
+    lc.setLed(0, lin, col+1, true);
+  }
 
   while (playing)
   {
@@ -466,9 +577,9 @@ void startGame()
       lc.setLed(0, shipLin, shipCol, 0);
       lc.setLed(0, shipLin + 1, shipCol, 0);
       lc.setLed(0, shipLin - 1, shipCol, 0);
-      if (shipLin < 7)
+      if (shipLin > 0)
       {
-        shipLin++;
+        shipLin--;
       }
       joyMovedY = true;
     }
@@ -478,9 +589,9 @@ void startGame()
       lc.setLed(0, shipLin, shipCol, 0);
       lc.setLed(0, shipLin + 1, shipCol, 0);
       lc.setLed(0, shipLin - 1, shipCol, 0);
-      if (shipLin > 0)
+      if (shipLin < 7)
       {
-        shipLin--;
+        shipLin++;
       }
       joyMovedY = true;
     }
@@ -489,22 +600,52 @@ void startGame()
       joyMovedY = false;
     }
 
-    if (doneOne == true and doneThree == true and doneFive == true)
+    if (level == 1 and lvl1ship1 == false and lvl1ship2 == false and lvl1ship3 == false)
     {
-      if (presentScore > highscore)
-      {
-        highscore = presentScore;
-        writeEEPROM(highscore);
-      }
-      lc.clearDisplay(0);
-      lcd.clear();
-      lcd.setCursor(3, 0);
-      lcd.print("Good job!");
-      lcd.setCursor(1, 1);
-      lcd.print("Level 1 Cleared");
-      delay(1500);
-      displayMenu();
+      displayVictoryScreen();
+      level = 2;
       playing = false;
+      startGame();
+    }
+    
+    if (level == 2) 
+    {
+      unsigned int elapsedTime = millis();
+      if (elapsedTime - lastChangedPoz > 1000)
+      {
+        if (lvl2ship1)
+        {
+          lin = random(0, 2);
+          if (lin == 0 and lvl2ship1poz > 0)
+          {
+            lc.setLed(0, lvl2ship1poz, col, false);
+            lc.setLed(0, lvl2ship1poz, col+1, false);              
+            lvl2ship1poz--;
+            lc.setLed(0, lvl2ship1poz, col, true);
+            lc.setLed(0, lvl2ship1poz, col+1, true); 
+          }
+          if (lin == 1 and lvl2ship1poz < 7)
+          {
+            lc.setLed(0, lvl2ship1poz, col, false);
+            lc.setLed(0, lvl2ship1poz, col+1, false);
+            lvl2ship1poz++;
+            lc.setLed(0, lvl2ship1poz, col, true);
+            lc.setLed(0, lvl2ship1poz, col+1, true);  
+          }
+          if (lvl2ship2)
+          {
+            lc.setLed(0, lvl2ship2poz, lvl2ship2col, true);
+            lc.setLed(0, lvl2ship2poz, lvl2ship2col+1, true);            
+          }
+        }
+        lastChangedPoz = elapsedTime;
+      }
+      if (lvl2ship1 == false and lvl2ship2 == false)
+      {
+        displayVictoryScreen();
+//        level = 3;
+        playing = false;
+      }
     }
   } 
 }
