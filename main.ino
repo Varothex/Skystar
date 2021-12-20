@@ -7,7 +7,6 @@
 //int soundClockPin = 0;
 //int dataPin = 1;
 //int buzyPin = A2; // 12
-
 //WTV020SD16P wtv020sd16p(resetPin,soundClockPin,dataPin,buzyPin);
 
 //const int button = 13;
@@ -37,8 +36,11 @@ const int potentiometer = 5;
 const int d5 = 4;
 const int d6 = 3;
 const int d7 = 2;
+const int lcdBrightnessPin = 1;
 LiquidCrystal lcd(RS, enable, d4, d5, d6, d7);
 int contrast = 90;
+bool lcdBrightness = HIGH; // ???
+
 
 byte heart[8] = 
 {
@@ -125,6 +127,8 @@ int lvl3ship3poz;
 int lvl3ship3col;
 int lvl3ship4poz;
 int lvl3ship4col;
+unsigned int lastChangedship3 = 0;
+unsigned int lastChangedship4 = 0;
 
 // EEPROM
 int highscore;
@@ -138,14 +142,22 @@ void setup()
 {
   pinMode(pinSW, INPUT_PULLUP);
 //  pinMode(button, INPUT_PULLUP);
-
-//  wtv020sd16p.reset();
-
+  pinMode(lcdBrightnessPin, OUTPUT);
+  
+  digitalWrite(lcdBrightnessPin, lcdBrightness);
   analogWrite(potentiometer, contrast);
   lcd.begin(16, 2);
+  
+//  wtv020sd16p.reset();
 
-  highscore = readEEPROM();
-//  writeEEPROM(0);
+  //  writeEEPROM(0);
+  highscore = readEEPROM(); 
+  
+  lc.shutdown(0, false); // turn off power saving, enables display
+  lc.setIntensity(0, brightness);
+  lc.clearDisplay(0);
+
+  randomSeed(analogRead(0));
   
   // Greetings message
   lcd.setCursor(3, 0);
@@ -155,11 +167,7 @@ void setup()
   delay(1500);
   displayMenu();
   
-  lc.shutdown(0, false); // turn off power saving, enables display
-  lc.setIntensity(0, brightness);
-  lc.clearDisplay(0);
 
-  randomSeed(analogRead(0));
   Serial.begin(9600);
 }
 
@@ -315,7 +323,7 @@ void readJoystickMenu()
     }
 }
 
-int readClick(int mode)
+void readClick(int mode)
 {
   swState = digitalRead(pinSW);
 
@@ -375,7 +383,7 @@ int readClick(int mode)
           {
             if (yIndex == 0)
             {
-//              nameSettings();
+//              soundSettings();
             }
             else
             {
@@ -417,7 +425,6 @@ int readClick(int mode)
         {
           done = true;
           nameBack = true;
-//          displaySettings();
         }
 
         // settigs contrast
@@ -456,7 +463,8 @@ int readClick(int mode)
             }
             else
             {
-//              lcdBrightnessSettings();
+              lcdBrightness = !lcdBrightness;
+              digitalWrite(lcdBrightnessPin, lcdBrightness); 
             }
           }
           else
@@ -490,7 +498,6 @@ int readClick(int mode)
         if (mode == 5000)
         {
           matrixBrightnessBack = true;
-//          lcdBrightnessBack = true;
           lc.clearDisplay(0);
           displayBrightness();
           matrixSettings();
@@ -660,19 +667,6 @@ void displayGameScreen()
 //      lastChanged = elapsedTime;
 //    } 
   }
-  else 
-  {
-    lcd.setCursor(12, 1);
-    lcd.print("X");
-    lcd.setCursor(13, 1);
-    lcd.print("X");
-    lcd.setCursor(14, 1);
-    lcd.write("X");
-  }
-//  else if (hp == 0)
-//  {
-//    
-//  }
 }
 
 void displayVictoryScreen()
@@ -699,6 +693,20 @@ void displayVictoryScreen()
   lcd.print(" Cleared");
   delay(1500);
   displayMenu();
+}
+
+void displayDefeatScreen()
+{
+  lc.clearDisplay(0);
+  lcd.clear();
+  lcd.setCursor(3, 0);
+  lcd.print("Oh, no!");
+  lcd.setCursor(1, 1);
+  lcd.print("Level ");
+  lcd.print(level);
+  lcd.print(" Failed!");
+  delay(1500);
+  displayMenu();  
 }
 
 void startGame()
@@ -929,10 +937,32 @@ void startGame()
     if (level == 3)
     {
       unsigned int elapsedTimeShip1 = millis();
-      if (elapsedTimeShip1 - lastChangedship1 > 1000)
+      if (elapsedTimeShip1 - lastChangedship1 > 3500)
       {
         if (lvl3ship1)
         {
+          bool damage = false;
+          for (int col = lvl3ship1col+2; col <= 7; col++)
+          {
+            lc.setLed(0, lvl3ship1poz, col, true);
+            delay(10);
+            lc.setLed(0, lvl3ship1poz, col, false);
+            if (shipLin == lvl3ship1poz and !damage)
+            {
+              if (hp == 0)
+              {
+                displayDefeatScreen();
+                playing = false;
+              }
+              else
+              {
+                displayGameScreen();
+                hp--;
+                damage = true;
+              }
+            }
+          }
+          
           lin = random(0, 2);
           if (lin == 0 and lvl3ship1poz > 0)
           {
@@ -970,11 +1000,10 @@ void startGame()
       }
 
       unsigned int elapsedTimeShip2 = millis();
-      if (elapsedTimeShip2 - lastChangedship2 > 2000)
+      if (elapsedTimeShip2 - lastChangedship2 > 2500)
       {
         if (lvl3ship2)
         {
-          // enemy ship fire
           bool damage = false;
           for (int col = lvl3ship2col+2; col <= 7; col++)
           {
@@ -983,9 +1012,17 @@ void startGame()
             lc.setLed(0, lvl3ship2poz, col, false);
             if (shipLin == lvl3ship2poz and !damage)
             {
-              hp--;
-              displayGameScreen();
-              damage = true;
+              if (hp == 0)
+              {
+                displayDefeatScreen();
+                playing = false;
+              }
+              else
+              {
+                displayGameScreen();
+                hp--;
+                damage = true;
+              }
             }
           }
           
@@ -1023,6 +1060,132 @@ void startGame()
           }
         }
         lastChangedship2 = elapsedTimeShip2;
+      }
+
+      unsigned int elapsedTimeShip3 = millis();
+      if (elapsedTimeShip3 - lastChangedship3 > 2000)
+      {
+        if (lvl3ship3)
+        {
+//          bool damage = false;
+//          for (int col = lvl3ship1col+2; col <= 7; col++)
+//          {
+//            lc.setLed(0, lvl3ship1poz, col, true);
+//            delay(10);
+//            lc.setLed(0, lvl3ship1poz, col, false);
+//            if (shipLin == lvl3ship1poz and !damage)
+//            {
+//              if (hp == 0)
+//              {
+//                displayDefeatScreen();
+//                playing = false;
+//              }
+//              else
+//              {
+//                displayGameScreen();
+//                hp--;
+//                damage = true;
+//              }
+//            }
+//          }
+          
+          lin = random(0, 2);
+          if (lin == 0 and lvl3ship3poz > 0)
+          {
+            lc.setLed(0, lvl3ship3poz, lvl3ship3col, false);
+            lc.setLed(0, lvl3ship3poz, lvl3ship3col+1, false);              
+            lvl3ship3poz--;
+            lc.setLed(0, lvl3ship3poz, lvl3ship3col, true);
+            lc.setLed(0, lvl3ship3poz, lvl3ship3col+1, true); 
+          }
+          if (lin == 1 and lvl3ship3poz < 7)
+          {
+            lc.setLed(0, lvl3ship3poz, lvl3ship3col, false);
+            lc.setLed(0, lvl3ship3poz, lvl3ship3col+1, false);
+            lvl3ship3poz++;
+            lc.setLed(0, lvl3ship3poz, lvl3ship3col, true);
+            lc.setLed(0, lvl3ship3poz, lvl3ship3col+1, true);  
+          }
+          if (lvl3ship1)
+          {
+            lc.setLed(0, lvl3ship1poz, lvl3ship1col, true);
+            lc.setLed(0, lvl3ship1poz, lvl3ship1col+1, true);            
+          }
+          if (lvl3ship2)
+          {
+            lc.setLed(0, lvl3ship2poz, lvl3ship2col, true);
+            lc.setLed(0, lvl3ship2poz, lvl3ship2col+1, true);            
+          }
+          if (lvl3ship4)
+          {
+            lc.setLed(0, lvl3ship4poz, lvl3ship4col, true);
+            lc.setLed(0, lvl3ship4poz, lvl3ship4col+1, true);            
+          }
+        }
+        lastChangedship3 = elapsedTimeShip3;
+      }
+
+      unsigned int elapsedTimeShip4 = millis();
+      if (elapsedTimeShip4 - lastChangedship4 > 1000)
+      {
+        if (lvl3ship4)
+        {
+//          bool damage = false;
+//          for (int col = lvl3ship1col+2; col <= 7; col++)
+//          {
+//            lc.setLed(0, lvl3ship1poz, col, true);
+//            delay(10);
+//            lc.setLed(0, lvl3ship1poz, col, false);
+//            if (shipLin == lvl3ship1poz and !damage)
+//            {
+//              if (hp == 0)
+//              {
+//                displayDefeatScreen();
+//                playing = false;
+//              }
+//              else
+//              {
+//                displayGameScreen();
+//                hp--;
+//                damage = true;
+//              }
+//            }
+//          }
+          
+          lin = random(0, 2);
+          if (lin == 0 and lvl3ship4poz > 0)
+          {
+            lc.setLed(0, lvl3ship4poz, lvl3ship4col, false);
+            lc.setLed(0, lvl3ship4poz, lvl3ship4col+1, false);              
+            lvl3ship4poz--;
+            lc.setLed(0, lvl3ship4poz, lvl3ship4col, true);
+            lc.setLed(0, lvl3ship4poz, lvl3ship4col+1, true); 
+          }
+          if (lin == 1 and lvl3ship4poz < 7)
+          {
+            lc.setLed(0, lvl3ship4poz, lvl3ship4col, false);
+            lc.setLed(0, lvl3ship4poz, lvl3ship4col+1, false);
+            lvl3ship4poz++;
+            lc.setLed(0, lvl3ship4poz, lvl3ship4col, true);
+            lc.setLed(0, lvl3ship4poz, lvl3ship4col+1, true);  
+          }
+          if (lvl3ship1)
+          {
+            lc.setLed(0, lvl3ship1poz, lvl3ship1col, true);
+            lc.setLed(0, lvl3ship1poz, lvl3ship1col+1, true);            
+          }
+          if (lvl3ship2)
+          {
+            lc.setLed(0, lvl3ship2poz, lvl3ship2col, true);
+            lc.setLed(0, lvl3ship2poz, lvl3ship2col+1, true);            
+          }
+          if (lvl3ship3)
+          {
+            lc.setLed(0, lvl3ship3poz, lvl3ship3col, true);
+            lc.setLed(0, lvl3ship3poz, lvl3ship3col+1, true);            
+          }
+        }
+        lastChangedship4 = elapsedTimeShip4;
       }
 
       if (lvl3ship1 == false and lvl3ship2 == false and lvl3ship3 == false and lvl3ship4 == false)
@@ -1244,8 +1407,6 @@ void readJoystickSettings()
 
 void matrixSettings()
 {
-  int i;
-
   lc.clearDisplay(0);
   
   lc.setLed(0, 0, 2, true);
