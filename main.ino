@@ -27,6 +27,7 @@ bool brightnessBack = false;
 bool contrastBack = false;
 bool scoreBack = false;
 bool aboutBack = false;
+bool matrixBrightnessBack = false;
 
 // LCD
 const int RS = 9;
@@ -64,6 +65,8 @@ bool brightnessBlink = 0;
 bool contrastBlink = 0;
 bool backBlink = 0;
 bool doneBlink = 0;
+bool matrixBrightnessBlink = 0;
+bool lcdBrightnessBlink = 0;
 
 // matrix
 const int dinPin = 12;
@@ -72,6 +75,7 @@ const int loadPin = 10;
 const int rows = 8;
 const int cols = 8;
 LedControl lc = LedControl(dinPin, clockPin, loadPin, 1); //DIN, CLK, LOAD, No. DRIVER
+int brightness = 2;
 
 // joystick
 const int n = 8;
@@ -131,10 +135,10 @@ void setup()
   displayMenu();
   
   lc.shutdown(0, false); // turn off power saving, enables display
-  lc.setIntensity(0, 2); // sets brightness (0~15 possible values)
-  lc.clearDisplay(0); // clear screen
+  lc.setIntensity(0, brightness);
+  lc.clearDisplay(0);
 
-  randomSeed(analogRead(0)); // random pin
+  randomSeed(analogRead(0));
   Serial.begin(9600);
 }
 
@@ -419,25 +423,64 @@ int readClick(int mode)
           analogWrite(potentiometer, contrast);
         }
 
-        // setting brightness
+        // settings brightness
+        if (mode == 2009)
+        {
+          if (xIndex == 0)
+          {
+            if (yIndex == 0)
+            {
+              matrixBrightnessSettings();
+            }
+            else
+            {
+//              lcdBrightnessSettings();
+            }
+          }
+          else
+          {
+            backBrightness();
+            matrixSettings();
+          }
+        }
+        
         if (10 <= mode and mode <= 25)
         {
-          lc.setIntensity(0, mode-10);
+          brightness = mode-10;
+          lcd.setCursor(0, 1);
+          if (brightness < 10)
+          {
+            lcd.print("0");
+          }
+          lcd.print(brightness);
+          lc.setIntensity(0, brightness);
         } 
 
         if (mode == 2008)
         {
-          lc.setIntensity(0, 2);
+          brightness = 2;
+          lcd.setCursor(0, 1);
+          lcd.print("02");
+          lc.setIntensity(0, brightness);
+        }
+
+        // brightness back
+        if (mode == 5000)
+        {
+          matrixBrightnessBack = true;
+//          lcdBrightnessBack = true;
+          lc.clearDisplay(0);
+          displayBrightness();
+          matrixSettings();
         }
 
         // back
         if (mode == 2007)
         {
           contrastBack = true;
-          brightnessBack = true;
           lc.clearDisplay(0);
-          matrixSettings();
           displaySettings();
+          matrixSettings();
         }
 
         // about
@@ -951,7 +994,12 @@ void nameSettings()
   
     if (xValue < 250)
     {
-      alphabetCounter--;
+      unsigned int elapsedTime = millis();
+      if (elapsedTime - lastChanged > 300)
+      {
+        alphabetCounter--;
+        lastChanged = elapsedTime;
+      }
       if (alphabetCounter < 0)
       {
         alphabetCounter = 25;
@@ -960,7 +1008,12 @@ void nameSettings()
 
     if (xValue > 750)
     {
-      alphabetCounter++;
+      unsigned int elapsedTime = millis();
+      if (elapsedTime - lastChanged > 300)
+      {
+        alphabetCounter++;
+        lastChanged = elapsedTime;
+      }
       if (alphabetCounter > 25)
       {
         alphabetCounter = 0;
@@ -987,7 +1040,7 @@ void nameSettings()
           }
           else
           {
-            lcd.print("done?");
+            lcd.print("Done?");
             doneBlink = 0;
           } 
           lastChanged = elapsedTime;
@@ -1001,16 +1054,143 @@ void nameSettings()
 void displayBrightness()
 {
   lcd.clear();
-  lcd.setCursor(0, 0);
-  lcd.print("Change brightness:");
-  lcd.setCursor(4, 1);
-  lcd.print("Default");
-  lcd.setCursor(12, 1);
+  lcd.setCursor(2, 0);
+  lcd.print("Matrix");
+  lcd.setCursor(11, 0);
+  lcd.print("LCD");
+  lcd.setCursor(6, 1);
   lcd.print("Back");
+}
+
+void readJoystickBrightness()
+{
+    xValue = analogRead(pinX);
+    yValue = analogRead(pinY);
+
+    if ((xValue < 250 or xValue > 750) && !joyMovedX)
+    {
+      if (xIndex == 0) 
+      {
+        xIndex = 1;
+        displayBrightness();
+      }
+      else 
+      {
+        xIndex = 0;
+        displayBrightness();
+      }
+      joyMovedX = true;
+    }
+    
+    if ((yValue < 250 or yValue > 750) && !joyMovedY)
+    {
+      if (yIndex == 0) 
+      {
+        yIndex = 1;
+        displayBrightness();
+      }
+      else 
+      {
+        yIndex = 0;
+        displayBrightness();
+      }
+      joyMovedY = true;
+    }
+
+    if (250 <= xValue && xValue <= 750) 
+    {
+      joyMovedX = false;
+    } 
+    
+    if (250 <= yValue && yValue <= 750) 
+    {
+      joyMovedY = false;
+    } 
+
+    if (xIndex == 0)
+    {
+      if (yIndex == 0)
+      {
+        unsigned int elapsedTime = millis();
+        if (elapsedTime - lastChanged > 250)
+        {
+          lcd.setCursor(2, 0);
+          if (matrixBrightnessBlink == 0)
+          {
+            lcd.print("      ");
+            matrixBrightnessBlink = 1;
+          }
+          else
+          {
+            lcd.print("Matrix");
+            matrixBrightnessBlink = 0;
+          }
+          lastChanged = elapsedTime;
+        }
+      }
+      else
+      {
+        unsigned int elapsedTime = millis();
+        if (elapsedTime - lastChanged > 250)
+        {
+          lcd.setCursor(11, 0);
+          if (lcdBrightnessBlink == 0)
+          {
+            lcd.print("   ");
+            lcdBrightnessBlink = 1;
+          }
+          else
+          {
+            lcd.print("LCD");
+            lcdBrightnessBlink = 0;
+          }
+          lastChanged = elapsedTime;
+        }
+      }
+     }
+     else
+     {
+      unsigned int elapsedTime = millis();
+      if (elapsedTime - lastChanged > 250)
+      {
+        lcd.setCursor(6, 1);
+        if (contrastBlink == 0)
+        {
+          lcd.print("    ");
+          contrastBlink = 1;
+        }
+        else
+        {
+          lcd.print("Back");
+          contrastBlink = 0;
+        }
+        lastChanged = elapsedTime;
+      }
+     }
 }
 
 void brightnessSettings()
 {
+//  for (int lin = 0; lin <= 15; lin++)
+//  {
+//    for (int col = 0; col <= 15; col++)
+//    {
+//      lc.setLed(0, lin, col, true);
+//    }
+//  }
+
+  brightnessBack = false;
+  displayBrightness();
+  
+  while (!brightnessBack)
+  {
+    readJoystickBrightness();
+    readClick(2009);
+  }
+}
+
+void matrixBrightnessSettings()
+{    
   for (int lin = 0; lin <= 15; lin++)
   {
     for (int col = 0; col <= 15; col++)
@@ -1018,15 +1198,21 @@ void brightnessSettings()
       lc.setLed(0, lin, col, true);
     }
   }
-    
-  int brightnessLevel = 8;
+  
+  int brightnessLevel = brightness;
   int nameIndex = 0;
   
-  brightnessBack = false;
+  matrixBrightnessBack = false;
 
-  displayBrightness();
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("Change brightness:");
+  lcd.setCursor(4, 1);
+  lcd.print("Default");
+  lcd.setCursor(12, 1);
+  lcd.print("Back");
 
-  while (!brightnessBack)
+  while (!matrixBrightnessBack)
   {
     yValue = analogRead(pinY);
 
@@ -1069,29 +1255,37 @@ void brightnessSettings()
       
       if (xValue < 250) 
       {
-        brightnessLevel++;
+        unsigned int elapsedTime = millis();
+        if (elapsedTime - lastChanged > 400)
+        {
+          brightnessLevel++;
+          lastChanged = elapsedTime;
+        }
         if (brightnessLevel > 15)
         {
           brightnessLevel = 0;
-          displayBrightness();
         }
       }
 
       if (xValue > 750 and nameIndex == 0)
       {
-        brightnessLevel--;
+        unsigned int elapsedTime = millis();
+        if (elapsedTime - lastChanged > 400)
+        {
+          brightnessLevel--;
+          lastChanged = elapsedTime;
+        }
         if (brightnessLevel < 0)
         {
           brightnessLevel = 15;
-          displayBrightness();
-        }
-        if (brightnessLevel < 10)
-        {
-          displayBrightness();
         }
       }
     
       lcd.setCursor(0, 1);
+      if (brightnessLevel < 10)
+      {
+        lcd.print("0");
+      }
       lcd.print(brightnessLevel);
       readClick(brightnessLevel + 10);
     }
@@ -1115,6 +1309,7 @@ void brightnessSettings()
         lastChanged = elapsedTime;
       }
       readClick(2008);
+      brightnessLevel = brightness;
     }
 
     if (nameIndex == 2)
@@ -1135,7 +1330,7 @@ void brightnessSettings()
         } 
         lastChanged = elapsedTime;
       }
-      readClick(2007);
+      readClick(5000);
     }
   }
 }
@@ -1204,7 +1399,6 @@ void contrastSettings()
           contrastLevel++;
           lastChanged = elapsedTime;
         }
-
         if (contrastLevel > 150)
         {
           contrastLevel = 0;
@@ -1219,7 +1413,6 @@ void contrastSettings()
           contrastLevel--;
           lastChanged = elapsedTime;
         }
-        
         if (contrastLevel < 0)
         {
           contrastLevel = 150;
@@ -1282,6 +1475,13 @@ void contrastSettings()
       readClick(2007);
     }
   }
+}
+
+void backBrightness()
+{
+  displaySettings();
+  lc.clearDisplay(0);
+  brightnessBack = true;
 }
 
 void backSettings()
