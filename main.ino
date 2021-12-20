@@ -1,9 +1,17 @@
 #include <LiquidCrystal.h>
 #include <LedControl.h>
 #include <EEPROM.h>
+#include <WTV020SD16P.h>
 
-const int button = 13;
-bool buttonPressed = 0;
+//int resetPin = 13;
+//int soundClockPin = 0;
+//int dataPin = 1;
+//int buzyPin = A2; // 12
+
+//WTV020SD16P wtv020sd16p(resetPin,soundClockPin,dataPin,buzyPin);
+
+//const int button = 13;
+//bool buttonPressed = 0;
 
 // name
 int alphabetCounter = 0;
@@ -83,13 +91,14 @@ int yIndex = 0;
 int positionCounter;
 
 // game
-int level = 1;
+int level = 2;
 bool lvl1ship1 = true;
 bool lvl1ship2 = true;
 bool lvl1ship3 = true;
 bool lvl2ship1 = true;
 bool lvl2ship2 = true;
 int lvl2ship1poz;
+int lvl2ship1col;
 int lvl2ship2poz;
 unsigned int lastChangedPoz = 0;
 
@@ -99,10 +108,14 @@ int presentScore = 0;
 const byte byteMask = 0xFF;
 const int byteLength = 8;
 
+//ship (){}
+
 void setup() 
 {
   pinMode(pinSW, INPUT_PULLUP);
-  pinMode(button, INPUT_PULLUP);
+//  pinMode(button, INPUT_PULLUP);
+
+//  wtv020sd16p.reset();
 
   analogWrite(potentiometer, contrast);
   lcd.begin(16, 2);
@@ -127,6 +140,7 @@ void setup()
 
 void loop() 
 {
+//  wtv020sd16p.playVoice(0);
   readJoystickMenu();
   readClick(1000);
 }
@@ -135,6 +149,7 @@ void loop()
 
 void displayMenu()
 {
+    lc.clearDisplay(0);
     lcd.clear();
     lcd.setCursor(1, 0);
     lcd.print("Start");
@@ -354,7 +369,7 @@ int readClick(int mode)
           }
         }
         
-        // setting name
+        // settings name
         if (mode == 2001)
         {
           name[0] = alphabet[alphabetCounter];
@@ -379,15 +394,29 @@ int readClick(int mode)
           displaySettings();
         }
 
-        // settig contrast
-        if (100 <= mode and mode <= 999)
+        // settigs contrast
+        if (100 <= mode and mode <= 250)
         {
-          analogWrite(potentiometer, mode);
+          contrast = mode-100;
+          lcd.setCursor(0, 1);
+          if (10 < contrast and contrast < 100)
+          {
+            lcd.print("0");
+          }
+          else if (contrast < 10)
+          {
+            lcd.print("00");
+          }
+          lcd.print(contrast);
+          analogWrite(potentiometer, contrast);
         } 
 
         if (mode == 2006)
         {
-          analogWrite(potentiometer, 90);
+          contrast = 90;
+          lcd.setCursor(0, 1);
+          lcd.print("090");
+          analogWrite(potentiometer, contrast);
         }
 
         // setting brightness
@@ -407,6 +436,7 @@ int readClick(int mode)
           contrastBack = true;
           brightnessBack = true;
           lc.clearDisplay(0);
+          matrixSettings();
           displaySettings();
         }
 
@@ -474,13 +504,13 @@ void displayGameScreen()
   lcd.print(level);
 
   lcd.setCursor(1, 1);
-  lcd.print("Life: ");
+  lcd.print(name);
   lcd.createChar(0, heart);
-  lcd.setCursor(7, 1);
+  lcd.setCursor(11, 1);
   lcd.write((byte)0);
-  lcd.setCursor(8, 1);
+  lcd.setCursor(12, 1);
   lcd.write((byte)0);
-  lcd.setCursor(9, 1);
+  lcd.setCursor(13, 1);
   lcd.write((byte)0);
 }
 
@@ -541,9 +571,10 @@ void startGame()
     lin = random(0, 5);
 
     lvl2ship1poz = lin;
+    lvl2ship1col = col;
 
-    lc.setLed(0, lin, col, true);
-    lc.setLed(0, lin, col+1, true);
+    lc.setLed(0, lvl2ship1poz, lvl2ship1col, true);
+    lc.setLed(0, lvl2ship1poz, lvl2ship1col+1, true);
 
     col = random(0, 4);
     lin = random(5, 8);
@@ -551,8 +582,8 @@ void startGame()
     lvl2ship2poz = lin;
     lvl2ship2col = col;
 
-    lc.setLed(0, lin, col, true);
-    lc.setLed(0, lin, col+1, true);
+    lc.setLed(0, lvl2ship2poz, lvl2ship2col, true);
+    lc.setLed(0, lvl2ship2poz, lvl2ship2col+1, true);
   }
 
   while (playing)
@@ -618,19 +649,19 @@ void startGame()
           lin = random(0, 2);
           if (lin == 0 and lvl2ship1poz > 0)
           {
-            lc.setLed(0, lvl2ship1poz, col, false);
-            lc.setLed(0, lvl2ship1poz, col+1, false);              
+            lc.setLed(0, lvl2ship1poz, lvl2ship1col, false);
+            lc.setLed(0, lvl2ship1poz, lvl2ship1col+1, false);              
             lvl2ship1poz--;
-            lc.setLed(0, lvl2ship1poz, col, true);
-            lc.setLed(0, lvl2ship1poz, col+1, true); 
+            lc.setLed(0, lvl2ship1poz, lvl2ship1col, true);
+            lc.setLed(0, lvl2ship1poz, lvl2ship1col+1, true); 
           }
           if (lin == 1 and lvl2ship1poz < 7)
           {
-            lc.setLed(0, lvl2ship1poz, col, false);
-            lc.setLed(0, lvl2ship1poz, col+1, false);
+            lc.setLed(0, lvl2ship1poz, lvl2ship1col, false);
+            lc.setLed(0, lvl2ship1poz, lvl2ship1col+1, false);
             lvl2ship1poz++;
-            lc.setLed(0, lvl2ship1poz, col, true);
-            lc.setLed(0, lvl2ship1poz, col+1, true);  
+            lc.setLed(0, lvl2ship1poz, lvl2ship1col, true);
+            lc.setLed(0, lvl2ship1poz, lvl2ship1col+1, true);  
           }
           if (lvl2ship2)
           {
@@ -667,8 +698,38 @@ int readEEPROM()
   return (firstByte << byteLength) + secondByte;
 }
 
+void matrixScore()
+{
+  int i;
+
+  lc.clearDisplay(0);
+  
+  for (i = 1; i <= 6; i++)
+  {
+    lc.setLed(0, i, 1, true);
+    lc.setLed(0, i, 4, true);
+  }
+
+  for (int i = 2; i <= 5; i++)
+  {
+    lc.setLed(0, i, 2, true);
+    lc.setLed(0, i, 3, true);
+    lc.setLed(0, i, 5, true);
+    lc.setLed(0, i, 7, true);
+  }
+  
+  lc.setLed(0, 0, 2, true);
+  lc.setLed(0, 0, 3, true);
+  lc.setLed(0, 7, 2, true);
+  lc.setLed(0, 7, 3, true);
+  lc.setLed(0, 3, 6, true);
+  lc.setLed(0, 4, 6, true);
+}
+
 void score()
 {
+  matrixScore();
+  
   scoreBack = false;
   
   lcd.clear();
@@ -826,8 +887,39 @@ void readJoystickSettings()
     }
 }
 
+void matrixSettings()
+{
+  int i;
+
+  lc.clearDisplay(0);
+  
+  lc.setLed(0, 0, 2, true);
+  lc.setLed(0, 0, 3, true);
+  lc.setLed(0, 1, 3, true);
+  lc.setLed(0, 1, 4, true);
+  lc.setLed(0, 2, 0, true);
+  lc.setLed(0, 2, 4, true);
+  lc.setLed(0, 3, 0, true);
+  lc.setLed(0, 3, 1, true);
+  lc.setLed(0, 3, 4, true);
+  lc.setLed(0, 4, 1, true);
+  lc.setLed(0, 4, 2, true);
+  lc.setLed(0, 4, 3, true);
+  lc.setLed(0, 4, 4, true);
+  lc.setLed(0, 4, 5, true);
+  lc.setLed(0, 5, 4, true);
+  lc.setLed(0, 5, 5, true);
+  lc.setLed(0, 5, 6, true);
+  lc.setLed(0, 6, 5, true);
+  lc.setLed(0, 6, 6, true);
+  lc.setLed(0, 6, 7, true);
+  lc.setLed(0, 7, 6, true);
+  lc.setLed(0, 7, 7, true);
+}
+
 void settings()
 {
+  matrixSettings();
   while (!settingsBack)
   {
     readJoystickSettings();
@@ -1050,7 +1142,7 @@ void brightnessSettings()
 
 void contrastSettings()
 {
-  int contrastLevel = 800;
+  int contrastLevel = contrast;
   int nameIndex = 0;
   
   contrastBack = false;
@@ -1106,25 +1198,45 @@ void contrastSettings()
       
       if (xValue < 250) 
       {
-        contrastLevel++;
-        if (contrastLevel > 999)
+        unsigned int elapsedTime = millis();
+        if (elapsedTime - lastChanged > 100)
         {
-          contrastLevel = 100;
+          contrastLevel++;
+          lastChanged = elapsedTime;
+        }
+
+        if (contrastLevel > 150)
+        {
+          contrastLevel = 0;
         }
       }
 
       if (xValue > 750 and nameIndex == 0)
       {
-        contrastLevel--;
-        if (contrastLevel < 100)
+        unsigned int elapsedTime = millis();
+        if (elapsedTime - lastChanged > 100)
         {
-          contrastLevel = 999;
+          contrastLevel--;
+          lastChanged = elapsedTime;
+        }
+        
+        if (contrastLevel < 0)
+        {
+          contrastLevel = 150;
         }
       }
     
       lcd.setCursor(0, 1);
+      if (10 < contrastLevel and contrastLevel < 100)
+      {
+        lcd.print("0");
+      }
+      else if (contrastLevel < 10)
+      {
+        lcd.print("00");
+      }
       lcd.print(contrastLevel);
-      readClick(contrastLevel);
+      readClick(contrastLevel + 100);
     }
 
     if (nameIndex == 1)
@@ -1146,6 +1258,7 @@ void contrastSettings()
         lastChanged = elapsedTime;
       }
       readClick(2006);
+      contrastLevel = contrast;
     }
 
     if (nameIndex == 2)
@@ -1174,14 +1287,44 @@ void contrastSettings()
 void backSettings()
 {
   displayMenu();
+  lc.clearDisplay(0);
   settingsBack = true;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+void matrixAbout()
+{
+  lc.clearDisplay(0);
+
+  lc.setLed(0, 3, 2, true);
+  lc.setLed(0, 1, 2, true);
+  lc.setLed(0, 1, 5, true);
+  lc.setLed(0, 2, 2, true);
+  lc.setLed(0, 2, 6, true);
+  lc.setLed(0, 3, 6, true);
+  lc.setLed(0, 3, 7, true);
+  lc.setLed(0, 4, 6, true);
+  lc.setLed(0, 4, 7, true);
+  lc.setLed(0, 5, 1, true);
+  lc.setLed(0, 5, 2, true);
+  lc.setLed(0, 5, 1, true);
+  lc.setLed(0, 5, 6, true);
+  lc.setLed(0, 6, 1, true);
+  lc.setLed(0, 6, 2, true);
+  lc.setLed(0, 6, 5, true);
+
+//  lc.setLed(0, 1, 1, true);
+//  lc.setLed(0, 2, 1, true);
+}
+
 void about()
 {
+
+  bool emojiBlink = 0;
   aboutBack = false;
+
+  matrixAbout();
   
   lcd.clear();
   lcd.setCursor(1, 0);
@@ -1191,13 +1334,32 @@ void about()
 
   while(aboutBack == false)
   {
-    for (positionCounter = 0; positionCounter < 24; positionCounter++) 
+    unsigned int elapsedTime = millis();
+    if (elapsedTime - lastChanged > 700)
     {
       lcd.scrollDisplayLeft();
-      readClick(3000);
-      delay(750);
+      
+      if (emojiBlink == 0)
+      {
+        lc.setLed(0, 1, 1, true);
+        lc.setLed(0, 2, 1, true);
+        lc.setLed(0, 3, 2, false);
+        emojiBlink = 1;
+      }
+      else
+      {
+        lc.setLed(0, 1, 1, false);
+        lc.setLed(0, 2, 1, false);
+        lc.setLed(0, 3, 2, true);
+        emojiBlink = 0;
+      } 
+      
+      lastChanged = elapsedTime;
     }
+
+    readClick(3000);
   }
-    
+
+  lc.clearDisplay(0);
   displayMenu();
 }
