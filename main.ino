@@ -98,7 +98,7 @@ int yIndex = 0;
 int positionCounter;
 
 // game
-int level = 3; // 1
+int level = 1; // 1
 int hp = 3;
 bool nameSet = false;
 
@@ -523,75 +523,82 @@ void readClick(int mode)
         // shoot
         else
         {
-          for (int col = 0; col <= 5; col++)
+          if (level != 4)
           {
-            lc.setLed(0, mode, 5 - col, true);
-            delay(10);
-            lc.setLed(0, mode, 5 - col, false);
+            for (int col = 0; col <= 5; col++)
+            {
+              lc.setLed(0, mode, 5 - col, true);
+              delay(10);
+              lc.setLed(0, mode, 5 - col, false);
             
-            if (level == 1)
-            {
-              if (mode == 1 and lvl1ship1)
+              if (level == 1)
               {
-                lvl1ship1 = false;
-                presentScore++;
-                displayGameScreen();
+                if (mode == 1 and lvl1ship1)
+                {
+                  lvl1ship1 = false;
+                  presentScore++;
+                  displayGameScreen();
+                }
+                if (mode == 3 and lvl1ship2)
+                {
+                  lvl1ship2 = false;
+                  presentScore++;
+                  displayGameScreen();
+                }
+                if (mode == 5 and lvl1ship3)
+                {
+                  lvl1ship3 = false;
+                  presentScore++;
+                  displayGameScreen();
+                }
               }
-              if (mode == 3 and lvl1ship2)
+              if (level == 2)
               {
-                lvl1ship2 = false;
-                presentScore++;
-                displayGameScreen();
+                if (mode == lvl2ship1poz and lvl2ship1)
+                {
+                  lvl2ship1 = false;
+                  presentScore += 2;
+                  displayGameScreen();
+                }
+                if (mode == lvl2ship2poz and lvl2ship2)
+                {
+                  lvl2ship2 = false;
+                  presentScore += 2;
+                  displayGameScreen();
+                }
               }
-              if (mode == 5 and lvl1ship3)
+              if (level == 3)
               {
-                lvl1ship3 = false;
-                presentScore++;
-                displayGameScreen();
+                if (mode == lvl3ship1poz and lvl3ship1)
+                {
+                  lvl3ship1 = false;
+                  presentScore += 3;
+                  displayGameScreen();
+                }
+                if (mode == lvl3ship2poz and lvl3ship2)
+                {
+                  lvl3ship2 = false;
+                  presentScore += 3;
+                  displayGameScreen();
+                }
+                if (mode == lvl3ship3poz and lvl3ship3)
+                {
+                  lvl3ship3 = false;
+                  presentScore += 3;
+                  displayGameScreen();
+                }
+                if (mode == lvl3ship4poz and lvl3ship4)
+                {
+                  lvl3ship4 = false;
+                  presentScore += 3;
+                  displayGameScreen();
+                }
               }
             }
-            if (level == 2)
-            {
-              if (mode == lvl2ship1poz and lvl2ship1)
-              {
-                lvl2ship1 = false;
-                presentScore += 2;
-                displayGameScreen();
-              }
-              if (mode == lvl2ship2poz and lvl2ship2)
-              {
-                lvl2ship2 = false;
-                presentScore += 2;
-                displayGameScreen();
-              }
-            }
-            if (level == 3)
-            {
-              if (mode == lvl3ship1poz and lvl3ship1)
-              {
-                lvl3ship1 = false;
-                presentScore += 3;
-                displayGameScreen();
-              }
-              if (mode == lvl3ship2poz and lvl3ship2)
-              {
-                lvl3ship2 = false;
-                presentScore += 3;
-                displayGameScreen();
-              }
-              if (mode == lvl3ship3poz and lvl3ship3)
-              {
-                lvl3ship3 = false;
-                presentScore += 3;
-                displayGameScreen();
-              }
-              if (mode == lvl3ship4poz and lvl3ship4)
-              {
-                lvl3ship4 = false;
-                presentScore += 3;
-                displayGameScreen();
-              }
-            }
+          }
+          else
+          {
+            
           }
         }
       }
@@ -709,6 +716,118 @@ void displayDefeatScreen()
   displayMenu();  
 }
 
+void boss()
+{
+  for (int lin = 0; lin <= 7; lin++)
+  {
+    for (int col = 0; col <= 2; col++)
+    {
+        lc.setLed(0, lin, col, true);
+    }
+  }
+  lc.setLed(0, 0, 1, false);
+  lc.setLed(0, 1, 0, false);
+  lc.setLed(0, 6, 0, false);
+  lc.setLed(0, 7, 1, false);
+  lc.setLed(0, 2, 3, true);
+  lc.setLed(0, 5, 3, true);
+}
+
+void bossFireRight()
+{
+//  bool damage = false;
+  for (int col = 4; col <= 7; col++)
+  {
+    lc.setLed(0, 2, col, true);
+    delay(15);
+    lc.setLed(0, 2, col, false);
+//    if (shipLin == lvl3ship1poz and !damage)
+//    {
+//      if (hp == 0)
+//      {
+//        displayDefeatScreen();
+//        playing = false;
+//      }
+//      else
+//      {
+//        displayGameScreen();
+//        hp--;
+//        damage = true;
+//      }
+//    }
+  }  
+}
+
+void bossFireLeft()
+{
+//  bool damage = false;
+  for (int col = 4; col <= 7; col++)
+  {
+    lc.setLed(0, 5, col, true);
+    delay(15);
+    lc.setLed(0, 5, col, false);
+//    if (shipLin == lvl3ship1poz and !damage)
+//    {
+//      if (hp == 0)
+//      {
+//        displayDefeatScreen();
+//        playing = false;
+//      }
+//      else
+//      {
+//        displayGameScreen();
+//        hp--;
+//        damage = true;
+//      }
+//    }
+  }  
+}
+
+void bossUltimate()
+{
+  for (int col = 4; col <= 7; col++)
+  {
+    lc.setLed(0, 2, col, true);
+    if (col ==  5)
+    {
+      lc.setLed(0, 1, col, true);
+      lc.setLed(0, 3, col, true);
+    }
+    if (col ==  7)
+    {
+      lc.setLed(0, 0, col, true);
+      lc.setLed(0, 4, col, true);
+    }
+    delay(100);
+    lc.setLed(0, 2, col, false);
+    lc.setLed(0, 1, 5, false);
+    lc.setLed(0, 3, 5, false);
+    lc.setLed(0, 0, 7, false);
+    lc.setLed(0, 4, 7, false);
+  }
+  
+  for (int col = 4; col <= 7; col++)
+  {
+    lc.setLed(0, 5, col, true);
+    if (col ==  5)
+    {
+      lc.setLed(0, 4, col, true);
+      lc.setLed(0, 6, col, true);
+    }
+    if (col ==  7)
+    {
+      lc.setLed(0, 3, col, true);
+      lc.setLed(0, 7, col, true);
+    }
+    delay(100);
+    lc.setLed(0, 5, col, false);
+    lc.setLed(0, 4, 5, false);
+    lc.setLed(0, 6, 5, false);
+    lc.setLed(0, 3, 7, false);
+    lc.setLed(0, 7, 7, false);
+  }   
+}
+
 void startGame()
 {
   bool shipState = false;
@@ -722,7 +841,7 @@ void startGame()
 
   if (!nameSet)
   {
-    nameSettings();
+//    nameSettings();
     nameSet = true;
   }
 
@@ -806,6 +925,11 @@ void startGame()
 
     lc.setLed(0, lvl3ship4poz, lvl3ship4col, true);
     lc.setLed(0, lvl3ship4poz, lvl3ship4col+1, true);
+  }
+
+  if (level == 4)
+  {
+    boss(); 
   }
 
   while (playing)
@@ -1191,10 +1315,16 @@ void startGame()
       if (lvl3ship1 == false and lvl3ship2 == false and lvl3ship3 == false and lvl3ship4 == false)
       {
         displayVictoryScreen();
-//        level = 4;
-        playing = false;
-//        startGame();
+        level = 4;
+        startGame();
       }
+    }
+
+    if (level == 4)
+    {
+      bossFireRight();
+      bossFireLeft();
+//      bossUltimate();
     }
   } 
 }
