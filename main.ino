@@ -6,6 +6,9 @@
 //const int button = 13;
 //bool buttonPressed = 0;
 
+// buzzer
+const int buzzerPin = 9;
+
 // name
 int alphabetCounter = 0;
 char alphabet[] = {'a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z'};
@@ -21,19 +24,20 @@ bool contrastBack = false;
 bool scoreBack = false;
 bool aboutBack = false;
 bool matrixBrightnessBack = false;
+bool lcdBrightnessBack = false;
 
 // LCD
-const int RS = 13; // 9
+const int RS = 13;
 const int enable = 8;
 const int d4 = 7;
 const int potentiometer = 5;
 const int d5 = 4;
 const int d6 = 3;
 const int d7 = 2;
-const int lcdBrightnessPin = 1;
+const int lcdBrightnessPin = 6;
 LiquidCrystal lcd(RS, enable, d4, d5, d6, d7);
 int contrast = 90;
-bool lcdBrightness = HIGH; // ???
+int lcdBrightness = 10;
 
 
 byte heart[8] = 
@@ -71,14 +75,14 @@ const int clockPin = 11;
 const int loadPin = 10;
 const int rows = 8;
 const int cols = 8;
-LedControl lc = LedControl(dinPin, clockPin, loadPin, 1); //DIN, CLK, LOAD, No. DRIVER
+LedControl lc = LedControl(dinPin, clockPin, loadPin, 1);
 int brightness = 2;
 
 // joystick
 const int n = 8;
-const int pinSW = 6; // digital pin connected to switch output
-const int pinX = A0; // A0 - analog pin connected to X output
-const int pinY = A1; // A1 - analog pin connected to Y output
+const int pinSW = 0;
+const int pinX = A0;
+const int pinY = A1;
 bool swState = HIGH;
 bool swStateLast = HIGH;
 bool buttonState = HIGH;
@@ -92,7 +96,7 @@ int yIndex = 0;
 int positionCounter;
 
 // game
-int level = 5; // 1
+int level = 1;
 int hp = 3;
 bool nameSet = false;
 
@@ -148,18 +152,19 @@ void setup()
 //  pinMode(button, INPUT_PULLUP);
   pinMode(lcdBrightnessPin, OUTPUT);
   
-  digitalWrite(lcdBrightnessPin, lcdBrightness);
+  analogWrite(lcdBrightnessPin, lcdBrightness*20);
+  
   analogWrite(potentiometer, contrast);
   lcd.begin(16, 2);
 
   //  writeEEPROM(0);
   highscore = readEEPROM(); 
   
-  lc.shutdown(0, false); // turn off power saving, enables display
+  lc.shutdown(0, false);
   lc.setIntensity(0, brightness);
   lc.clearDisplay(0);
 
-  randomSeed(analogRead(A5)); // 0
+  randomSeed(analogRead(A5));
   
   // Greetings message
   lcd.setCursor(3, 0);
@@ -175,7 +180,7 @@ void setup()
 
 void loop() 
 {
-//  wtv020sd16p.playVoice(0);
+//  tone(buzzerPin, 900, 10);
   readJoystickMenu();
   readClick(1000);
 }
@@ -349,7 +354,7 @@ void readClick(int mode)
             if (yIndex == 0)
             {
               nameSet = false;
-//              level = 1;
+              level = 1;
               startGame();
             }
             else
@@ -466,8 +471,7 @@ void readClick(int mode)
             }
             else
             {
-              lcdBrightness = !lcdBrightness;
-              digitalWrite(lcdBrightnessPin, lcdBrightness); 
+              lcdBrightnessSettings();
             }
           }
           else
@@ -497,10 +501,31 @@ void readClick(int mode)
           lc.setIntensity(0, brightness);
         }
 
+        if (50 <= mode and mode <= 60)
+        {
+          lcdBrightness = mode-50;
+          lcd.setCursor(0, 1);
+          if (lcdBrightness < 10)
+          {
+            lcd.print("0");
+          }
+          lcd.print(lcdBrightness);
+          analogWrite(lcdBrightnessPin, lcdBrightness*20);          
+        }
+
+        if (mode == 70)
+        {
+          lcdBrightness = 10;
+          lcd.setCursor(0, 1);
+          lcd.print("10");
+          analogWrite(lcdBrightnessPin, lcdBrightness*20);          
+        }
+
         // brightness back
         if (mode == 5000)
         {
           matrixBrightnessBack = true;
+          lcdBrightnessBack = true;
           lc.clearDisplay(0);
           displayBrightness();
           matrixSettings();
@@ -923,7 +948,7 @@ void startGame()
 
   if (!nameSet)
   {
-//    nameSettings();
+    nameSettings();
     nameSet = true;
   }
 
@@ -1678,7 +1703,7 @@ void displaySettings()
 { 
   lcd.clear();
   lcd.setCursor(0, 0);
-  lcd.print("Name");
+  lcd.print("Sound");
   lcd.setCursor(6, 0);
   lcd.print("Brightness");
   lcd.setCursor(0, 1);
@@ -1742,12 +1767,12 @@ void readJoystickSettings()
           lcd.setCursor(0, 0);
           if (nameBlink == 0)
           {
-            lcd.print("    ");
+            lcd.print("     ");
             nameBlink = 1;
           }
           else
           {
-            lcd.print("Name");
+            lcd.print("Sound");
             nameBlink = 0;
           }
           lastChanged = elapsedTime;
@@ -2186,6 +2211,144 @@ void matrixBrightnessSettings()
       }
       readClick(2008);
       brightnessLevel = brightness;
+    }
+
+    if (nameIndex == 2)
+    {
+      unsigned int elapsedTime = millis();
+      if (elapsedTime - lastChanged > 250)
+      {
+        lcd.setCursor(12, 1);
+        if (doneBlink == 0)
+        {
+          lcd.print("    ");
+          doneBlink = 1;
+        }
+        else
+        {
+          lcd.print("Back");
+          doneBlink = 0;
+        } 
+        lastChanged = elapsedTime;
+      }
+      readClick(5000);
+    }
+  }
+}
+
+void lcdBrightnessSettings()
+{    
+  int lcdBrightnessLevel = lcdBrightness;
+  int nameIndex = 0;
+  
+  lcdBrightnessBack = false;
+
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("Change brightness:");
+  lcd.setCursor(4, 1);
+  lcd.print("Default");
+  lcd.setCursor(12, 1);
+  lcd.print("Back");
+
+  while (!lcdBrightnessBack)
+  {
+    yValue = analogRead(pinY);
+
+    if (yValue < 250 && !joyMovedY)
+    {
+      nameIndex++;
+      lcd.setCursor(4, 1);
+      lcd.print("Default");
+      lcd.setCursor(12, 1);
+      lcd.print("Back");
+      if (nameIndex > 2)
+      {
+        nameIndex = 0;
+      }
+      joyMovedY = true;
+    }
+
+    if (yValue > 750 && !joyMovedY)
+    {
+      nameIndex--;
+      lcd.setCursor(4, 1);
+      lcd.print("Default");
+      lcd.setCursor(12, 1);
+      lcd.print("Back");
+      if (nameIndex < 0)
+      {
+        nameIndex = 2;
+      }      
+      joyMovedY = true;
+    }
+
+    if (250 <= yValue && yValue <= 750) 
+    {
+      joyMovedY = false;
+    }
+
+    if (nameIndex == 0)
+    {
+      xValue = analogRead(pinX);
+      
+      if (xValue < 250) 
+      {
+        unsigned int elapsedTime = millis();
+        if (elapsedTime - lastChanged > 400)
+        {
+          lcdBrightnessLevel++;
+          lastChanged = elapsedTime;
+        }
+        if (lcdBrightnessLevel > 10)
+        {
+          lcdBrightnessLevel = 0;
+        }
+      }
+
+      if (xValue > 750 and nameIndex == 0)
+      {
+        unsigned int elapsedTime = millis();
+        if (elapsedTime - lastChanged > 400)
+        {
+          lcdBrightnessLevel--;
+          lastChanged = elapsedTime;
+        }
+        if (lcdBrightnessLevel < 0)
+        {
+          lcdBrightnessLevel = 10;
+        }
+      }
+    
+      lcd.setCursor(0, 1);
+      if (lcdBrightnessLevel < 10)
+      {
+        lcd.print("0");
+      }
+      lcd.print(lcdBrightnessLevel);
+      readClick(lcdBrightnessLevel + 50);
+    }
+
+    if (nameIndex == 1)
+    {
+      unsigned int elapsedTime = millis();
+      if (elapsedTime - lastChanged > 250)
+      {
+        lcd.setCursor(4, 1);
+        if (doneBlink == 0)
+        {
+          lcd.print("       ");
+          doneBlink = 1;
+        }
+        else
+        {
+          lcd.print("Default");
+          doneBlink = 0;
+        } 
+        lastChanged = elapsedTime;
+      }
+      readClick(70);
+      lcdBrightnessLevel = lcdBrightness;
     }
 
     if (nameIndex == 2)
