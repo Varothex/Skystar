@@ -106,22 +106,20 @@ int melody[] =
 };
 int melodyBoss[] = 
 {
-  NOTE_A4,4, NOTE_A4,4, NOTE_A4,4, NOTE_F4,-8, NOTE_C5,16,
-  NOTE_A4,4, NOTE_F4,-8, NOTE_C5,16, NOTE_A4,2,//4
-  NOTE_E5,4, NOTE_E5,4, NOTE_E5,4, NOTE_F5,-8, NOTE_C5,16,
-  NOTE_A4,4, NOTE_F4,-8, NOTE_C5,16, NOTE_A4,2,
+  NOTE_A4,4, NOTE_A4,4, NOTE_A4,4, NOTE_F4,-8, NOTE_C5,16, NOTE_A4,4, NOTE_F4,-8, NOTE_C5,16, NOTE_A4,2,//4
+  NOTE_E5,4, NOTE_E5,4, NOTE_E5,4, NOTE_F5,-8, NOTE_C5,16, NOTE_A4,4, NOTE_F4,-8, NOTE_C5,16, NOTE_A4,2,
   
-  NOTE_A5,4, NOTE_A4,-8, NOTE_A4,16, NOTE_A5,4, NOTE_GS5,-8, NOTE_G5,16, //7 
-  NOTE_DS5,16, NOTE_D5,16, NOTE_DS5,8, REST,8, NOTE_A4,8, NOTE_DS5,4, NOTE_D5,-8, NOTE_CS5,16,
-
-  NOTE_C5,16, NOTE_B4,16, NOTE_C5,16, REST,8, NOTE_F4,8, NOTE_GS4,4, NOTE_F4,-8, NOTE_A4,-16,//9
-  NOTE_C5,4, NOTE_A4,-8, NOTE_C5,16, NOTE_E5,2,
-
-  NOTE_A5,4, NOTE_A4,-8, NOTE_A4,16, NOTE_A5,4, NOTE_GS5,-8, NOTE_G5,16, //7 
-  NOTE_DS5,16, NOTE_D5,16, NOTE_DS5,8, REST,8, NOTE_A4,8, NOTE_DS5,4, NOTE_D5,-8, NOTE_CS5,16,
-
-  NOTE_C5,16, NOTE_B4,16, NOTE_C5,16, REST,8, NOTE_F4,8, NOTE_GS4,4, NOTE_F4,-8, NOTE_A4,-16,//9
-  NOTE_A4,4, NOTE_F4,-8, NOTE_C5,16, NOTE_A4,2,
+//  NOTE_A5,4, NOTE_A4,-8, NOTE_A4,16, NOTE_A5,4, NOTE_GS5,-8, NOTE_G5,16, //7 
+//  NOTE_DS5,16, NOTE_D5,16, NOTE_DS5,8, REST,8, NOTE_A4,8, NOTE_DS5,4, NOTE_D5,-8, NOTE_CS5,16,
+//
+//  NOTE_C5,16, NOTE_B4,16, NOTE_C5,16, REST,8, NOTE_F4,8, NOTE_GS4,4, NOTE_F4,-8, NOTE_A4,-16,//9
+//  NOTE_C5,4, NOTE_A4,-8, NOTE_C5,16, NOTE_E5,2,
+//
+//  NOTE_A5,4, NOTE_A4,-8, NOTE_A4,16, NOTE_A5,4, NOTE_GS5,-8, NOTE_G5,16, //7 
+//  NOTE_DS5,16, NOTE_D5,16, NOTE_DS5,8, REST,8, NOTE_A4,8, NOTE_DS5,4, NOTE_D5,-8, NOTE_CS5,16,
+//
+//  NOTE_C5,16, NOTE_B4,16, NOTE_C5,16, REST,8, NOTE_F4,8, NOTE_GS4,4, NOTE_F4,-8, NOTE_A4,-16,//9
+//  NOTE_A4,4, NOTE_F4,-8, NOTE_C5,16, NOTE_A4,2,
 };
 int notes = sizeof(melodyBoss) / sizeof(melodyBoss[0]) / 2;
 int notesBoss = sizeof(melodyBoss) / sizeof(melodyBoss[0]) / 2;
@@ -218,7 +216,9 @@ int positionCounter;
 // game
 int level;
 int hp = 3;
+int bossHp;
 bool nameSet = false;
+unsigned long long int gameTime;
 
 bool lvl1ship1 = true;
 bool lvl1ship2 = true;
@@ -279,6 +279,7 @@ void setup()
   
   pinMode(pinSW, INPUT_PULLUP);
   pinMode(lcdBrightnessPin, OUTPUT);
+  pinMode(buzzer, OUTPUT);
 
   lcdBrightness = EEPROM.read(lcdBrightnessAddress);
   analogWrite(lcdBrightnessPin, lcdBrightness*20);
@@ -291,8 +292,8 @@ void setup()
 //  writeHighscore2EEPROM(0);
 //  writeHighscore3EEPROM(0);
   highscore1 = readHighscore1EEPROM(); 
-//  highscore2 = readHighscore2EEPROM(); 
-//  highscore3 = readHighscore3EEPROM(); 
+  highscore2 = readHighscore2EEPROM(); 
+  highscore3 = readHighscore3EEPROM(); 
   
   lc.shutdown(0, false);
   brightness = EEPROM.read(brightnessAddress);
@@ -306,6 +307,8 @@ void setup()
   lcd.print("Welcome to");
   lcd.setCursor(4, 1);
   lcd.print("Skystar!");
+
+  analogWrite(buzzer, HIGH);
 
   // music
   for (int thisNote = 0; thisNote < notes * 2; thisNote = thisNote + 2) 
@@ -499,6 +502,7 @@ void readClick(int mode)
   {
     if (swState != buttonState)
     {
+      noTone(buzzer);
       buttonState = swState;
       if (buttonState == LOW) 
       {
@@ -510,7 +514,7 @@ void readClick(int mode)
             if (yIndex == 0)
             {
               nameSet = false;
-              level = 3;                                        // 1
+              level = 1;
               startGame();
             }
             else
@@ -810,7 +814,20 @@ void readClick(int mode)
           }
           else
           {
-            // level 5
+            for (int col = 0; col <= 1; col++)
+            {
+              tone(buzzer, 1000, 10);
+              lc.setLed(0, mode, 5 - col, true);
+              delay(10);
+              lc.setLed(0, mode, 5 - col, false);
+            
+              if (bossHp)
+              {
+                  bossHp--;
+                  presentScore++;
+                  displayGameScreen();
+              }
+            }
           }
         }
       }
@@ -869,10 +886,6 @@ void displayGameScreen()
     lcd.setCursor(14, 1);
     lcd.write((byte)0); 
   }
-//  else
-//  {
-//    displayDefeatScreen();
-//  }
 }
 
 void enemyAnimation(int shipLin, int col)
@@ -881,6 +894,7 @@ void enemyAnimation(int shipLin, int col)
   {
     lc.setLed(0, shipLin, shipCol + 1, HIGH);
     lc.setLed(0, shipLin, shipCol, HIGH);
+    tone(buzzer, 250, 10);
     delay(300);
     lc.setLed(0, shipLin, shipCol + 1, LOW);
     lc.setLed(0, shipLin, shipCol, LOW);
@@ -920,25 +934,42 @@ void displayVictoryScreen(int shipLin)
   delay(500);
   tone(buzzer,600,1000);
   delay(850);
-  if (presentScore > highscore1)
-  {
-    lc.clearDisplay(0);
-    lcd.clear();  
-    lcd.setCursor(1, 0);
-    lcd.print("New highscore!");
-    lcd.setCursor(7, 1);
-    lcd.print(presentScore);
-    highscore1 = presentScore;
-    writeHighscore1EEPROM(highscore1);
-    writeHighscore1NameEEPROM(name);
-    delay(1500);
-  }
+
   displayMenu();
 }
 
 void displayDefeatScreen()
 {
+  tone(buzzer,600,1000);
+  delay(150);
+  tone(buzzer,700,150);
+  delay(500);
+  tone(buzzer,500,500);
+  delay(150);
+  tone(buzzer,400,500);
+  delay(150);
+  tone(buzzer,300,500);
+  delay(150);
+  tone(buzzer,200,500);
+  delay(500);
+  
   lc.clearDisplay(0);
+
+  lc.setLed(0, 1, 1, true);
+  lc.setLed(0, 1, 2, true);
+  lc.setLed(0, 1, 6, true);
+  lc.setLed(0, 2, 1, true);
+  lc.setLed(0, 2, 2, true);
+  lc.setLed(0, 2, 5, true);
+  lc.setLed(0, 3, 5, true);
+  lc.setLed(0, 4, 5, true);
+  lc.setLed(0, 5, 1, true);
+  lc.setLed(0, 5, 2, true);
+  lc.setLed(0, 5, 5, true);
+  lc.setLed(0, 6, 1, true);
+  lc.setLed(0, 6, 2, true);
+  lc.setLed(0, 6, 6, true);
+
   lcd.clear();
   lcd.setCursor(3, 0);
   lcd.print("Oh, no!");
@@ -947,11 +978,77 @@ void displayDefeatScreen()
   lcd.print(level);
   lcd.print(" Failed!");
   delay(1500);
+  lc.clearDisplay(0);
+  displayScore();
   displayMenu();  
+}
+
+void displayScore()
+{
+  if (presentScore > highscore1)
+  {
+    highscore3 = highscore2;
+    highscore2 = highscore1;
+    lc.clearDisplay(0);
+    lcd.clear();  
+    lcd.setCursor(1, 0);
+    lcd.print("New highscore!");
+    lcd.setCursor(7, 1);
+    lcd.print(presentScore);
+    highscore1 = presentScore;
+    writeHighscore1EEPROM(highscore1);
+    writeHighscore2EEPROM(highscore2);
+    writeHighscore3EEPROM(highscore3);
+//    writeHighscore1NameEEPROM(name);
+    delay(1500);
+  }
+  else if (presentScore > highscore2)
+  {
+    highscore3 = highscore2;
+    lc.clearDisplay(0);
+    lcd.clear();  
+    lcd.setCursor(0, 0);
+    lcd.print("New second score!");
+    lcd.setCursor(7, 1);
+    lcd.print(presentScore);
+    highscore2 = presentScore;
+    writeHighscore2EEPROM(highscore2);
+    writeHighscore3EEPROM(highscore3);
+    delay(1500);
+  }
+  else if (presentScore > highscore3)
+  {
+    lc.clearDisplay(0);
+    lcd.clear();  
+    lcd.setCursor(0, 0);
+    lcd.print("New third score!");
+    lcd.setCursor(7, 1);
+    lcd.print(presentScore);
+    highscore3 = presentScore;
+    writeHighscore3EEPROM(highscore3);
+    delay(1500);
+  }  
 }
 
 void bossAnimation()
 {
+  for (int thisNote = 0; thisNote < notesBoss * 2; thisNote = thisNote + 2) 
+  {
+    divider = melodyBoss[thisNote + 1];
+    if (divider > 0) 
+    {
+      noteDuration = (wholenoteBoss) / divider;
+    } 
+    else if (divider < 0) 
+    {
+      noteDuration = (wholenoteBoss) / abs(divider);
+      noteDuration *= 1.5;
+    }
+    tone(buzzer, melodyBoss[thisNote], noteDuration*0.9);
+    delay(noteDuration);
+    noTone(buzzer);
+  }
+  
   lc.setLed(0, 2, 0, true);
   lc.setLed(0, 5, 0, true);
   delay(1000);
@@ -1014,51 +1111,23 @@ void boss()
 
 void bossFireRight()
 {
-//  bool damage = false;
   for (int col = 4; col <= 7; col++)
   {
     lc.setLed(0, 2, col, true);
+    tone(buzzer, 500, 10);
     delay(15);
     lc.setLed(0, 2, col, false);
-//    if (shipLin == lvl3ship1poz and !damage)
-//    {
-//      if (hp == 0)
-//      {
-//        displayDefeatScreen();
-//        playing = false;
-//      }
-//      else
-//      {
-//        displayGameScreen();
-//        hp--;
-//        damage = true;
-//      }
-//    }
   }  
 }
 
 void bossFireLeft()
 {
-//  bool damage = false;
   for (int col = 4; col <= 7; col++)
   {
     lc.setLed(0, 5, col, true);
+    tone(buzzer, 500, 10);
     delay(15);
     lc.setLed(0, 5, col, false);
-//    if (shipLin == lvl3ship1poz and !damage)
-//    {
-//      if (hp == 0)
-//      {
-//        displayDefeatScreen();
-//        playing = false;
-//      }
-//      else
-//      {
-//        displayGameScreen();
-//        hp--;
-//        damage = true;
-//      }
-//    }
   }  
 }
 
@@ -1066,6 +1135,7 @@ void bossUltimate()
 {
   for (int col = 4; col <= 7; col++)
   {
+    tone(buzzer, 500, 10);
     lc.setLed(0, 2, col, true);
     if (col ==  5)
     {
@@ -1087,6 +1157,7 @@ void bossUltimate()
   
   for (int col = 4; col <= 7; col++)
   {
+    tone(buzzer, 500, 10);
     lc.setLed(0, 5, col, true);
     if (col ==  5)
     {
@@ -1105,6 +1176,15 @@ void bossUltimate()
     lc.setLed(0, 3, 7, false);
     lc.setLed(0, 7, 7, false);
   }   
+}
+
+void gotHit()
+{
+  tone(buzzer, NOTE_G4);
+  delay(125);
+  tone(buzzer, NOTE_C4);
+  delay(250);
+  noTone(buzzer);
 }
 
 void generateShipsLvl2()
@@ -1188,11 +1268,13 @@ void startGame()
   int shipLin = 4;
   int shipCol = 7;
   int lin, col;
+  int charge = 0;
   hp = 3;
+  bossHp = 100;
 
   if (!nameSet)
   {
-//    nameSettings();
+    nameSettings();
     presentScore = 0;
     nameSet = true;
   }
@@ -1221,6 +1303,7 @@ void startGame()
   if (level == 2)
   {
     generateShipsLvl2();
+    gameTime = millis();
   }
 
   if (level == 3)
@@ -1239,7 +1322,6 @@ void startGame()
     boss(); 
   }
 
-  unsigned int gameTime = millis();
   while (playing)
   {
     lc.setLed(0, shipLin, shipCol - 1, HIGH);
@@ -1356,10 +1438,11 @@ void startGame()
         generateShipsLvl2();
       }
 
-      if (millis() - gameTime > 30000) 
+      if (millis() - gameTime > 20000) 
       {
         displayVictoryScreen(shipLin);
         level = 3;  
+        gameTime = millis();
         playing = false;
         startGame();
       }
@@ -1370,12 +1453,13 @@ void startGame()
       unsigned int elapsedTimeShip1 = millis();
       if (elapsedTimeShip1 - lastChangedship1 > 1750)
       {
-        if (lvl3ship1)
+        if (lvl3ship1 and playing)
         {
           bool damage = false;
           for (int col = lvl3ship1col+2; col <= 7; col++)
           {
             lc.setLed(0, lvl3ship1poz, col, true);
+            tone(buzzer, 500, 10);
             delay(10);
             lc.setLed(0, lvl3ship1poz, col, false);
             if (shipLin == lvl3ship1poz and !damage)
@@ -1385,12 +1469,14 @@ void startGame()
                 hp--;
                 displayGameScreen();
                 damage = true;
+                gotHit();
               }
               if (!hp)
               {
                 displayDefeatScreen();
                 playing = false;
                 col = 8;  
+                gameTime = millis();
               }
             }
           }
@@ -1432,12 +1518,13 @@ void startGame()
       unsigned int elapsedTimeShip2 = millis();
       if (elapsedTimeShip2 - lastChangedship2 > 2000)
       {
-        if (lvl3ship2)
+        if (lvl3ship2 and playing)
         {
           bool damage = false;
           for (int col = lvl3ship2col+2; col <= 7; col++)
           {
             lc.setLed(0, lvl3ship2poz, col, true);
+            tone(buzzer, 500, 10);
             delay(10);
             lc.setLed(0, lvl3ship2poz, col, false);
             if (shipLin == lvl3ship2poz and !damage)
@@ -1447,12 +1534,14 @@ void startGame()
                 hp--;
                 displayGameScreen();
                 damage = true;
+                gotHit();
               }
               if (!hp)
               {
                 displayDefeatScreen();
                 playing = false;
                 col = 8;  
+                gameTime = millis();
               }
             }
           }
@@ -1494,12 +1583,13 @@ void startGame()
       unsigned int elapsedTimeShip3 = millis();
       if (elapsedTimeShip3 - lastChangedship3 > 2500)
       {
-        if (lvl3ship3)
+        if (lvl3ship3 and playing)
         {
           bool damage = false;
           for (int col = lvl3ship3col+2; col <= 7; col++)
           {
             lc.setLed(0, lvl3ship3poz, col, true);
+            tone(buzzer, 500, 10);
             delay(10);
             lc.setLed(0, lvl3ship3poz, col, false);
             if (shipLin == lvl3ship3poz and !damage)
@@ -1509,12 +1599,14 @@ void startGame()
                 hp--;
                 displayGameScreen();
                 damage = true;
+                gotHit();
               }
               if (!hp)
               {
                 displayDefeatScreen();
                 playing = false;
                 col = 8;  
+                gameTime = millis();
               }
             }
           }
@@ -1558,10 +1650,12 @@ void startGame()
         generateShipsLvl3();
       }
 
-      if (millis() - gameTime > 45000 and playing)
+      if (millis() - gameTime > 30000 and playing)
       {
+        col = 8;
         displayVictoryScreen(shipLin);
         level = 4;  
+        gameTime = millis();
         playing = false;
         startGame();
       }
@@ -1572,12 +1666,13 @@ void startGame()
       unsigned int elapsedTimeShip1 = millis();
       if (elapsedTimeShip1 - lastChangedship1 > 1000)
       {
-        if (lvl4ship1)
+        if (lvl4ship1 and playing)
         {
           bool damage = false;
           for (int col = lvl4ship1col+2; col <= 7; col++)
           {
             lc.setLed(0, lvl4ship1poz, col, true);
+            tone(buzzer, 500, 10);
             delay(10);
             lc.setLed(0, lvl4ship1poz, col, false);
             if (shipLin == lvl4ship1poz and !damage)
@@ -1587,12 +1682,14 @@ void startGame()
                 hp--;
                 displayGameScreen();
                 damage = true;
+                gotHit();
               }
               if (!hp)
               {
                 displayDefeatScreen();
                 playing = false;
                 col = 8;  
+                gameTime = millis();
               }
             }
           }
@@ -1639,12 +1736,13 @@ void startGame()
       unsigned int elapsedTimeShip2 = millis();
       if (elapsedTimeShip2 - lastChangedship2 > 1500)
       {
-        if (lvl4ship2)
+        if (lvl4ship2 and playing)
         {
           bool damage = false;
           for (int col = lvl4ship2col+2; col <= 7; col++)
           {
             lc.setLed(0, lvl4ship2poz, col, true);
+            tone(buzzer, 500, 10);
             delay(10);
             lc.setLed(0, lvl4ship2poz, col, false);
             if (shipLin == lvl4ship2poz and !damage)
@@ -1654,12 +1752,14 @@ void startGame()
                 hp--;
                 displayGameScreen();
                 damage = true;
+                gotHit();
               }
               if (!hp)
               {
                 displayDefeatScreen();
                 playing = false;
                 col = 8;  
+                gameTime = millis();
               }
             }
           }
@@ -1706,12 +1806,13 @@ void startGame()
       unsigned int elapsedTimeShip3 = millis();
       if (elapsedTimeShip3 - lastChangedship3 > 1250)
       {
-        if (lvl4ship3)
+        if (lvl4ship3 and playing)
         {
           bool damage = false;
           for (int col = lvl4ship3col+2; col <= 7; col++)
           {
             lc.setLed(0, lvl4ship3poz, col, true);
+            tone(buzzer, 500, 10);
             delay(10);
             lc.setLed(0, lvl4ship3poz, col, false);
             if (shipLin == lvl4ship3poz and !damage)
@@ -1721,12 +1822,14 @@ void startGame()
                 hp--;
                 displayGameScreen();
                 damage = true;
+                gotHit();
               }
               if (!hp)
               {
                 displayDefeatScreen();
                 playing = false;
                 col = 8;  
+                gameTime = millis();
               }
             }
           }
@@ -1773,12 +1876,13 @@ void startGame()
       unsigned int elapsedTimeShip4 = millis();
       if (elapsedTimeShip4 - lastChangedship4 > 1750)
       {
-        if (lvl4ship4)
+        if (lvl4ship4 and playing)
         {
           bool damage = false;
           for (int col = lvl4ship4col+2; col <= 7; col++)
           {
             lc.setLed(0, lvl4ship4poz, col, true);
+            tone(buzzer, 500, 10);
             delay(10);
             lc.setLed(0, lvl4ship4poz, col, false);
             if (shipLin == lvl4ship4poz and !damage)
@@ -1788,12 +1892,14 @@ void startGame()
                 hp--;
                 displayGameScreen();
                 damage = true;
+                gotHit();
               }
               if (!hp)
               {
                 displayDefeatScreen();
                 playing = false;
                 col = 8;  
+                gameTime = millis();
               }
             }
           }
@@ -1842,10 +1948,12 @@ void startGame()
         generateShipsLvl4();
       }
 
-      if (millis() - gameTime > 50000 and playing)
+      if (millis() - gameTime > 40000 and playing)
       {
+        col = 8;
         displayVictoryScreen(shipLin);
         level = 5;  
+        gameTime = millis();
         playing = false;
         startGame();
       }
@@ -1853,28 +1961,89 @@ void startGame()
 
     if (level == 5)
     {
-//      bossFireRight();
-//      bossFireLeft();
-//      bossUltimate();
-//        playing = false;
-      for (int thisNote = 0; thisNote < notesBoss * 2; thisNote = thisNote + 2) 
+      unsigned int elapsedTimeShip1 = millis();
+      if (elapsedTimeShip1 - lastChangedship1 > 2000)
       {
-        divider = melodyBoss[thisNote + 1];
-        if (divider > 0) 
+        lin = random(0, 2);
+        if (lin == 0)
         {
-          noteDuration = (wholenoteBoss) / divider;
-        } 
-        else if (divider < 0) 
-        {
-          noteDuration = (wholenoteBoss) / abs(divider);
-          noteDuration *= 1.5;
+          bossFireRight();
+          charge++;
         }
-        tone(buzzer, melodyBoss[thisNote], noteDuration*0.9);
-        delay(noteDuration);
-        noTone(buzzer);
+        else
+        {
+          bossFireLeft(); 
+          charge++;           
+        }
+        
+        if (playing and bossHp)
+        {
+          bool damage = false;
+          
+          if (charge == 5)
+          {
+            bossUltimate();
+            if (shipLin != 1 or shipLin != 6 and !damage)
+            {
+              if (hp)
+              {
+                hp--;
+                displayGameScreen();
+                damage = true;
+                gotHit();
+              }
+              if (!hp)
+              {
+                displayDefeatScreen();
+                playing = false; 
+              }
+            }
+            charge = 0;
+          }
+          
+          else if (lin == 0 and shipLin == 2 and !damage)
+          {
+            if (hp)
+            {
+              hp--;
+              displayGameScreen();
+              damage = true;
+              gotHit();
+            }
+            if (!hp)
+            {
+              displayDefeatScreen();
+              playing = false; 
+            }
+          }
+          if (lin == 1 and shipLin == 5 and !damage)
+          {
+            if (hp)
+            {
+              hp--;
+              displayGameScreen();
+              damage = true;
+              gotHit();
+            }
+            if (!hp)
+            {
+              displayDefeatScreen();
+              playing = false;
+            }
+          }
+        }
+       lastChangedship1 = elapsedTimeShip1;
       }
-    }
-  } 
+
+      if (bossHp == 0)
+      {
+        displayVictoryScreen(shipLin);
+        playing = false;
+        displayScore();
+        displayMenu();
+      }
+    } 
+  }
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1897,6 +2066,22 @@ void writeHighscore1NameEEPROM(char name[])
   EEPROM.update(4, thirdByte);
 }
 
+void writeHighscore2EEPROM(int score) 
+{
+  byte firstByte = (score >> byteLength) & byteMask;
+  byte secondByte = score & byteMask;
+  EEPROM.update(5, firstByte);
+  EEPROM.update(6, secondByte);
+}
+
+void writeHighscore3EEPROM(int score) 
+{
+  byte firstByte = (score >> byteLength) & byteMask;
+  byte secondByte = score & byteMask;
+  EEPROM.update(10, firstByte);
+  EEPROM.update(11, secondByte);
+}
+
 int readHighscore1EEPROM() 
 {
   byte firstByte = EEPROM.read(0);
@@ -1910,6 +2095,20 @@ int readHighscore1NameEEPROM()
   byte secondByte = EEPROM.read(3);
   byte thirdByte = EEPROM.read(4);
   return ((firstByte << byteLength) << byteLength) + (secondByte << byteLength) + thirdByte;
+}
+
+int readHighscore2EEPROM() 
+{
+  byte firstByte = EEPROM.read(5);
+  byte secondByte = EEPROM.read(6);
+  return (firstByte << byteLength) + secondByte;
+}
+
+int readHighscore3EEPROM() 
+{
+  byte firstByte = EEPROM.read(10);
+  byte secondByte = EEPROM.read(11);
+  return (firstByte << byteLength) + secondByte;
 }
 
 void matrixScore()
@@ -1947,12 +2146,25 @@ void score()
   scoreBack = false;
   
   lcd.clear();
-  lcd.setCursor(0, 0);
-  lcd.print("Highest score:");
+  
+  lcd.setCursor(5, 0);
+  lcd.print("1: ");
+  lcd.setCursor(8, 0);
   lcd.print(readHighscore1EEPROM());
-  lcd.setCursor(0, 1);
-  lcd.print("Name: ");
-  lcd.print(readHighscore1NameEEPROM());
+  
+//  lcd.setCursor(0, 1);
+//  lcd.print("Name: ");
+//  lcd.print(readHighscore1NameEEPROM());
+
+  lcd.setCursor(1, 1);
+  lcd.print("2: ");
+  lcd.setCursor(4, 1);
+  lcd.print(readHighscore2EEPROM());
+
+  lcd.setCursor(9, 1);
+  lcd.print("3: ");
+  lcd.setCursor(12, 1);
+  lcd.print(readHighscore3EEPROM());
 
   while(scoreBack == false)
   {
@@ -2810,18 +3022,17 @@ void backSettings()
 void matrixAbout()
 {
   lc.clearDisplay(0);
-  lc.setLed(0, 3, 2, true);
   lc.setLed(0, 1, 2, true);
   lc.setLed(0, 1, 5, true);
   lc.setLed(0, 2, 2, true);
   lc.setLed(0, 2, 6, true);
+  lc.setLed(0, 3, 2, true);
   lc.setLed(0, 3, 6, true);
   lc.setLed(0, 3, 7, true);
   lc.setLed(0, 4, 6, true);
   lc.setLed(0, 4, 7, true);
   lc.setLed(0, 5, 1, true);
   lc.setLed(0, 5, 2, true);
-  lc.setLed(0, 5, 1, true);
   lc.setLed(0, 5, 6, true);
   lc.setLed(0, 6, 1, true);
   lc.setLed(0, 6, 2, true);
