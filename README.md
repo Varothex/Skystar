@@ -1,6 +1,17 @@
 # Skystar
-The Arduino game I am making for my robotics class. It is a Space Invaders game, that uses a joystick and a button to move and fire at enemies.
+The Arduino game I made for my robotics class. It is a Space Invaders game, that uses a joystick and a button to move and fire at enemies. It was inspired by Demonstar 2, a game I played when I was little. I had lots of fun making it!
 
+The game is very simple, you control a small spaceship at the bottom of the LCD with a joystick. Your goal is to obtain the highest score possible by shooting as many enemies as you can. It has 5 levels that become more and more difficult:
+- the first one is just a tutorial, to get ajusted with the movement and the shooting. You have three stationary enemies that spawn always at the exact same location. Just shoot them to advance.
+- from the second level forward you have a limited time/level to shoot enemies. Now you have two random generated enemies that move around very fast. Each time you thake a pair down another random pair will apair.
+- from the third one things get serious, as now the enemies will fire back at you and can kill you if you are shot three times, so be careful! Also, like before, if you shoot them all they will be replaced, only now there are three at a time.
+- the forth level adds four enemies at the same time that follow you with the intent to kill you!
+- if you survived through all this, at the fifth and final level you will encounter the boss, that has two standard attacks and two special deadly attacks! Beat him and you beat the game!
+
+Components:
+
+
+Stage progress:
 Stage 1:
 - I added the main menu with:
   - start;
