@@ -11,7 +11,7 @@ The game is very simple, you control a small spaceship at the bottom of the LCD 
 Components:
 
 
-Stage progress:
+# Stage progress:
 Stage 1:
 - I added the main menu with:
   - start;
