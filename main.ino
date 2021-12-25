@@ -108,18 +108,6 @@ int melodyBoss[] =
 {
   NOTE_A4,4, NOTE_A4,4, NOTE_A4,4, NOTE_F4,-8, NOTE_C5,16, NOTE_A4,4, NOTE_F4,-8, NOTE_C5,16, NOTE_A4,2,//4
   NOTE_E5,4, NOTE_E5,4, NOTE_E5,4, NOTE_F5,-8, NOTE_C5,16, NOTE_A4,4, NOTE_F4,-8, NOTE_C5,16, NOTE_A4,2,
-  
-//  NOTE_A5,4, NOTE_A4,-8, NOTE_A4,16, NOTE_A5,4, NOTE_GS5,-8, NOTE_G5,16, //7 
-//  NOTE_DS5,16, NOTE_D5,16, NOTE_DS5,8, REST,8, NOTE_A4,8, NOTE_DS5,4, NOTE_D5,-8, NOTE_CS5,16,
-//
-//  NOTE_C5,16, NOTE_B4,16, NOTE_C5,16, REST,8, NOTE_F4,8, NOTE_GS4,4, NOTE_F4,-8, NOTE_A4,-16,//9
-//  NOTE_C5,4, NOTE_A4,-8, NOTE_C5,16, NOTE_E5,2,
-//
-//  NOTE_A5,4, NOTE_A4,-8, NOTE_A4,16, NOTE_A5,4, NOTE_GS5,-8, NOTE_G5,16, //7 
-//  NOTE_DS5,16, NOTE_D5,16, NOTE_DS5,8, REST,8, NOTE_A4,8, NOTE_DS5,4, NOTE_D5,-8, NOTE_CS5,16,
-//
-//  NOTE_C5,16, NOTE_B4,16, NOTE_C5,16, REST,8, NOTE_F4,8, NOTE_GS4,4, NOTE_F4,-8, NOTE_A4,-16,//9
-//  NOTE_A4,4, NOTE_F4,-8, NOTE_C5,16, NOTE_A4,2,
 };
 int notes = sizeof(melodyBoss) / sizeof(melodyBoss[0]) / 2;
 int notesBoss = sizeof(melodyBoss) / sizeof(melodyBoss[0]) / 2;
@@ -132,7 +120,6 @@ int alphabetCounter = 0;
 char alphabet[] = {'a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z'};
 char name[4] = {'a', 'b' , 'c'};
 int cursor = 0;
-int cursorMode = 2001;
 
 // back
 bool settingsBack = false;
@@ -191,12 +178,15 @@ bool hpBlink = 0;
 const int dinPin = 12;
 const int clockPin = 11;
 const int loadPin = 10;
-const int rows = 8;
-const int cols = 8;
+const int minLin = 0;
+const int maxLin = 7;
+const int maxCol = 7;
 LedControl lc = LedControl(dinPin, clockPin, loadPin, 1);
 int brightness;
 
 // joystick
+const int lowerValue = 250; 
+const int higherValue = 750;
 const int n = 8;
 const int pinSW = 0;
 const int pinX = A0;
@@ -212,6 +202,31 @@ int xIndex = 0;
 int yIndex = 0;
 
 int positionCounter;
+
+// modes
+const int gameMode = 1000;
+int nameCursorMode = 1001;
+const int nameFirstLetterMode = 1001;
+const int nameSecondLetterMode = 1002;
+const int nameThirdLetterMode = 1003;
+const int nameWaitMode = 2004;
+const int nameStartMode = 1005;
+
+const int scoreMode = 2000;
+
+const int settingsMenuMode = 3000;
+const int brightnessMenuMode = 3001;
+const int backToSettingsMode = 3002;
+int setMatrixBrightnessMode;
+const int defaultMatrixBrightnessMode = 3003;
+int setLcdBrightnessMode;
+const int defaultLcdBrightnessMode = 3004;
+const int backToBrightnessMode = 3005;
+int setContrastMode;
+const int defaultContrastMode = 3006;
+
+
+const int aboutMode = 4000;
 
 // game
 int level;
@@ -310,7 +325,7 @@ void setup()
 
   analogWrite(buzzer, HIGH);
 
-  // music
+  // start music
   for (int thisNote = 0; thisNote < notes * 2; thisNote = thisNote + 2) 
   {
     divider = melody[thisNote + 1];
@@ -337,11 +352,15 @@ void loop()
 {  
   noTone(buzzer);
   readJoystickMenu();
-  readClick(1000);
+  readClick(gameMode);
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+void cursorSound()
+{
+  tone(buzzer, 500, 10);
+}
 void displayMenu()
 {
     lc.clearDisplay(0);
@@ -361,46 +380,46 @@ void readJoystickMenu()
     xValue = analogRead(pinX);
     yValue = analogRead(pinY);
 
-    if ((xValue < 250 or xValue > 750) && !joyMovedX)
+    if ((xValue < lowerValue or xValue > higherValue) && !joyMovedX)
     {
       if (xIndex == 0) 
       {
-        tone(buzzer, 500, 10);
+        cursorSound();
         xIndex = 1;
         displayMenu();
       }
       else 
       {
-        tone(buzzer, 500, 10);
+        cursorSound();
         xIndex = 0;
         displayMenu();
       }
       joyMovedX = true;
     }
     
-    if ((yValue < 250 or yValue > 750) && !joyMovedY)
+    if ((yValue < lowerValue or yValue > higherValue) && !joyMovedY)
     {
       if (yIndex == 0) 
       {
-        tone(buzzer, 500, 10);
+        cursorSound();
         yIndex = 1;
         displayMenu();
       }
       else 
       {
-        tone(buzzer, 500, 10);
+        cursorSound();
         yIndex = 0;
         displayMenu();
       }
       joyMovedY = true;
     }
 
-    if (250 <= xValue && xValue <= 750) 
+    if (lowerValue <= xValue && xValue <= higherValue) 
     {
       joyMovedX = false;
     } 
     
-    if (250 <= yValue && yValue <= 750) 
+    if (lowerValue <= yValue && yValue <= higherValue) 
     {
       joyMovedY = false;
     } 
@@ -507,14 +526,14 @@ void readClick(int mode)
       if (buttonState == LOW) 
       {
         // main menu
-        if (mode == 1000)
+        if (mode == gameMode)
         {
           if (xIndex == 0)
           {
             if (yIndex == 0)
             {
               nameSet = false;
-              level = 1;
+              level = 5; //aici
               startGame();
             }
             else
@@ -537,181 +556,28 @@ void readClick(int mode)
           }
         }
 
-        // score
-        if (mode == 1999)
-        {
-          scoreBack = true;
-          displayMenu();
-        }
-
-        // settings menu
-        if (mode == 2000)
-        {
-          if (xIndex == 0)
-          {
-            if (yIndex == 0)
-            {
-//              soundSettings();
-            }
-            else
-            {
-              brightnessSettings();
-            }
-          }
-          else
-          {
-            if (yIndex == 0)
-            {
-              contrastSettings();
-            }
-            else
-            {
-              backSettings();
-            }
-          }
-        }
-        
-        // settings name
-        if (mode == 2001)
+        // name
+        if (mode == nameFirstLetterMode)
         {
           name[0] = alphabet[alphabetCounter];
           cursor = 1;
-          cursorMode = 2002;
+          nameCursorMode = nameSecondLetterMode;
         }
-        if (mode == 2002)
+        if (mode == nameSecondLetterMode)
         {
           name[1] = alphabet[alphabetCounter];
           cursor = 2;
-          cursorMode = 2003;
+          nameCursorMode = nameThirdLetterMode;
         }
-        if (mode == 2003)
+        if (mode == nameThirdLetterMode)
         {
           name[2] = alphabet[alphabetCounter];
-          cursorMode = 2004;
+          nameCursorMode = nameWaitMode;
         }
-        if (mode == 2005)
+        if (mode == nameStartMode)
         {
           done = true;
           nameBack = true;
-        }
-
-        // settigs contrast
-        if (100 <= mode and mode <= 250)
-        {
-          contrast = mode-100;
-          EEPROM.update(contrastAddress, contrast);
-          lcd.setCursor(0, 1);
-          if (10 < contrast and contrast < 100)
-          {
-            lcd.print("0");
-          }
-          else if (contrast < 10)
-          {
-            lcd.print("00");
-          }
-          lcd.print(contrast);
-          analogWrite(potentiometer, contrast);
-        } 
-
-        if (mode == 2006)
-        {
-          contrast = 90;
-          EEPROM.update(contrastAddress, contrast);
-          lcd.setCursor(0, 1);
-          lcd.print("090");
-          analogWrite(potentiometer, contrast);
-        }
-
-        // settings brightness
-        if (mode == 2009)
-        {
-          if (xIndex == 0)
-          {
-            if (yIndex == 0)
-            {
-              matrixBrightnessSettings();
-            }
-            else
-            {
-              lcdBrightnessSettings();
-            }
-          }
-          else
-          {
-            backBrightness();
-            matrixSettings();
-          }
-        }
-        
-        if (10 <= mode and mode <= 25)
-        {
-          brightness = mode-10;
-          EEPROM.update(brightnessAddress, brightness);
-          lcd.setCursor(0, 1);
-          if (brightness < 10)
-          {
-            lcd.print("0");
-          }
-          lcd.print(brightness);
-          lc.setIntensity(0, brightness);
-        } 
-
-        if (mode == 2008)
-        {
-          brightness = 2;
-          EEPROM.update(brightnessAddress, brightness);
-          lcd.setCursor(0, 1);
-          lcd.print("02");
-          lc.setIntensity(0, brightness);
-        }
-
-        if (50 <= mode and mode <= 60)
-        {
-          lcdBrightness = mode-50;
-          EEPROM.update(lcdBrightnessAddress, lcdBrightness);
-          lcd.setCursor(0, 1);
-          if (lcdBrightness < 10)
-          {
-            lcd.print("0");
-          }
-          lcd.print(lcdBrightness);
-          analogWrite(lcdBrightnessPin, lcdBrightness*20);          
-        }
-
-        if (mode == 70)
-        {
-          lcdBrightness = 10;
-          EEPROM.update(lcdBrightnessAddress, lcdBrightness);
-          lcd.setCursor(0, 1);
-          lcd.print("10");
-          analogWrite(lcdBrightnessPin, lcdBrightness*20);          
-        }
-
-        // brightness back
-        if (mode == 5000)
-        {
-          matrixBrightnessBack = true;
-          lcdBrightnessBack = true;
-          lc.clearDisplay(0);
-          displayBrightness();
-          matrixSettings();
-        }
-
-        // back
-        if (mode == 2007)
-        {
-          contrastBack = true;
-          lc.clearDisplay(0);
-          displaySettings();
-          matrixSettings();
-        }
-
-        // about
-        if (mode == 3000)
-        {
-          positionCounter = 25;
-          aboutBack = true;
-          displayMenu();
         }
 
         // shoot
@@ -820,15 +686,167 @@ void readClick(int mode)
               lc.setLed(0, mode, 5 - col, true);
               delay(10);
               lc.setLed(0, mode, 5 - col, false);
+            }
             
-              if (bossHp)
-              {
-                  bossHp--;
-                  presentScore++;
-                  displayGameScreen();
-              }
+            if (bossHp)
+            {
+                bossHp--;
+                presentScore++;
+                displayGameScreen();
             }
           }
+        }
+
+        // score
+        if (mode == scoreMode)
+        {
+          scoreBack = true;
+          displayMenu();
+        }
+
+        // settings menu
+        if (mode == settingsMenuMode)
+        {
+          if (xIndex == 0)
+          {
+            if (yIndex == 0)
+            {
+//              soundSettings();
+            }
+            else
+            {
+              brightnessSettings();
+            }
+          }
+          else
+          {
+            if (yIndex == 0)
+            {
+              contrastSettings();
+            }
+            else
+            {
+              backSettings();
+            }
+          }
+        }
+
+        // settings brightness
+        if (mode == brightnessMenuMode)
+        {
+          if (xIndex == 0)
+          {
+            if (yIndex == 0)
+            {
+              matrixBrightnessSettings();
+            }
+            else
+            {
+              lcdBrightnessSettings();
+            }
+          }
+          else
+          {
+            backBrightness();
+            matrixSettings();
+          }
+        }
+        
+        if (10 <= mode and mode <= 25)
+        {
+          brightness = mode-10;
+          EEPROM.update(brightnessAddress, brightness);
+          lcd.setCursor(0, 1);
+          if (brightness < 10)
+          {
+            lcd.print("0");
+          }
+          lcd.print(brightness);
+          lc.setIntensity(0, brightness);
+        } 
+
+        if (mode == defaultMatrixBrightnessMode)
+        {
+          brightness = 2;
+          EEPROM.update(brightnessAddress, brightness);
+          lcd.setCursor(0, 1);
+          lcd.print("02");
+          lc.setIntensity(0, brightness);
+        }
+
+        if (50 <= mode and mode <= 60)
+        {
+          lcdBrightness = mode-50;
+          EEPROM.update(lcdBrightnessAddress, lcdBrightness);
+          lcd.setCursor(0, 1);
+          if (lcdBrightness < 10)
+          {
+            lcd.print("0");
+          }
+          lcd.print(lcdBrightness);
+          analogWrite(lcdBrightnessPin, lcdBrightness*20);          
+        }
+
+        if (mode == defaultLcdBrightnessMode)
+        {
+          lcdBrightness = 10;
+          EEPROM.update(lcdBrightnessAddress, lcdBrightness);
+          lcd.setCursor(0, 1);
+          lcd.print("10");
+          analogWrite(lcdBrightnessPin, lcdBrightness*20);          
+        }
+
+        // back to brightness menu
+        if (mode == backToBrightnessMode)
+        {
+          matrixBrightnessBack = true;
+          lcdBrightnessBack = true;
+          lc.clearDisplay(0);
+          displayBrightness();
+          matrixSettings();
+        }
+
+        // settigs contrast
+        if (100 <= mode and mode <= 250)
+        {
+          contrast = mode-100;
+          EEPROM.update(contrastAddress, contrast);
+          lcd.setCursor(0, 1);
+          if (10 < contrast and contrast < 100)
+          {
+            lcd.print("0");
+          }
+          else if (contrast < 10)
+          {
+            lcd.print("00");
+          }
+          lcd.print(contrast);
+          analogWrite(potentiometer, contrast);
+        } 
+
+        if (mode == defaultContrastMode)
+        {
+          contrast = 90;
+          EEPROM.update(contrastAddress, contrast);
+          lcd.setCursor(0, 1);
+          lcd.print("090");
+          analogWrite(potentiometer, contrast);
+        }
+        
+        if (mode == backToSettingsMode)
+        {
+          contrastBack = true;
+          lc.clearDisplay(0);
+          displaySettings();
+          matrixSettings();
+        }
+
+        // about
+        if (mode == aboutMode)
+        {
+          positionCounter = 25;
+          aboutBack = true;
+          displayMenu();
         }
       }
     }
@@ -938,6 +956,88 @@ void displayVictoryScreen(int shipLin)
   displayMenu();
 }
 
+void displayEnd()
+{
+  lc.clearDisplay(0);
+  lcd.clear();
+  lcd.setCursor(3, 0);
+  lcd.print("Great job!");
+  lcd.setCursor(1, 1);
+  lcd.print("Game cleared!");
+  
+  for (int col = 7; col >= 2; col--)
+  {
+    lc.setLed(0, 4, col, HIGH);
+    delay(200);
+    lc.setLed(0, 4, col, LOW);
+  }
+  
+  lc.setLed(0, 3, 2, HIGH);
+  lc.setLed(0, 4, 1, HIGH);
+  lc.setLed(0, 4, 3, HIGH);
+  lc.setLed(0, 5, 2, HIGH);
+  delay(200);
+  lc.setLed(0, 3, 2, LOW);
+  lc.setLed(0, 4, 1, LOW); //aici
+  lc.setLed(0, 4, 3, LOW);
+  lc.setLed(0, 5, 2, LOW);
+  
+  lc.setLed(0, 2, 2, HIGH);
+  lc.setLed(0, 3, 1, HIGH);
+  lc.setLed(0, 3, 3, HIGH);
+  lc.setLed(0, 4, 0, HIGH);
+  lc.setLed(0, 4, 4, HIGH);
+  lc.setLed(0, 5, 1, HIGH);
+  lc.setLed(0, 5, 3, HIGH);
+  lc.setLed(0, 6, 2, HIGH);
+  delay(200);
+  lc.setLed(0, 2, 2, LOW);
+  lc.setLed(0, 3, 1, LOW);
+  lc.setLed(0, 3, 3, LOW);
+  lc.setLed(0, 4, 0, LOW);
+  lc.setLed(0, 4, 4, LOW);
+  lc.setLed(0, 5, 1, LOW);
+  lc.setLed(0, 5, 3, LOW);
+  lc.setLed(0, 6, 2, LOW);
+
+  for (int col = 7; col >= 4; col--)
+  {
+    lc.setLed(0, 3, col, HIGH);
+    delay(200);
+    lc.setLed(0, 3, col, LOW);
+  }
+  
+  lc.setLed(0, 2, 4, HIGH);
+  lc.setLed(0, 3, 3, HIGH);
+  lc.setLed(0, 3, 5, HIGH);
+  lc.setLed(0, 4, 4, HIGH);
+  delay(200);
+  lc.setLed(0, 2, 4, LOW);
+  lc.setLed(0, 3, 3, LOW);
+  lc.setLed(0, 3, 5, LOW);
+  lc.setLed(0, 4, 4, LOW);
+  
+  lc.setLed(0, 1, 4, HIGH);
+  lc.setLed(0, 2, 3, HIGH);
+  lc.setLed(0, 2, 5, HIGH);
+  lc.setLed(0, 3, 2, HIGH);
+  lc.setLed(0, 3, 6, HIGH);
+  lc.setLed(0, 4, 3, HIGH);
+  lc.setLed(0, 4, 5, HIGH);
+  lc.setLed(0, 5, 4, HIGH);
+  delay(200);
+  lc.setLed(0, 1, 4, LOW);
+  lc.setLed(0, 2, 3, LOW);
+  lc.setLed(0, 2, 5, LOW);
+  lc.setLed(0, 3, 4, LOW);
+  lc.setLed(0, 3, 6, LOW);
+  lc.setLed(0, 4, 3, LOW);
+  lc.setLed(0, 4, 5, LOW);
+  lc.setLed(0, 5, 4, LOW);
+  
+  displayMenu();
+}
+
 void displayDefeatScreen()
 {
   tone(buzzer,600,1000);
@@ -999,7 +1099,6 @@ void displayScore()
     writeHighscore1EEPROM(highscore1);
     writeHighscore2EEPROM(highscore2);
     writeHighscore3EEPROM(highscore3);
-//    writeHighscore1NameEEPROM(name);
     delay(1500);
   }
   else if (presentScore > highscore2)
@@ -1032,6 +1131,7 @@ void displayScore()
 
 void bossAnimation()
 {
+  // boss theme song
   for (int thisNote = 0; thisNote < notesBoss * 2; thisNote = thisNote + 2) 
   {
     divider = melodyBoss[thisNote + 1];
@@ -1114,7 +1214,7 @@ void bossFireRight()
   for (int col = 4; col <= 7; col++)
   {
     lc.setLed(0, 2, col, true);
-    tone(buzzer, 500, 10);
+    cursorSound();
     delay(15);
     lc.setLed(0, 2, col, false);
   }  
@@ -1125,17 +1225,17 @@ void bossFireLeft()
   for (int col = 4; col <= 7; col++)
   {
     lc.setLed(0, 5, col, true);
-    tone(buzzer, 500, 10);
+    cursorSound();
     delay(15);
     lc.setLed(0, 5, col, false);
   }  
 }
 
-void bossUltimate()
+void bossUltimate1()
 {
   for (int col = 4; col <= 7; col++)
   {
-    tone(buzzer, 500, 10);
+    cursorSound();
     lc.setLed(0, 2, col, true);
     if (col ==  5)
     {
@@ -1157,7 +1257,7 @@ void bossUltimate()
   
   for (int col = 4; col <= 7; col++)
   {
-    tone(buzzer, 500, 10);
+    cursorSound();
     lc.setLed(0, 5, col, true);
     if (col ==  5)
     {
@@ -1211,19 +1311,19 @@ void generateShipsLvl3()
   lvl3ship2 = true;
   lvl3ship3 = true;
     
-  lvl3ship1poz = random(0, 8);
+  lvl3ship1poz = random(0, 3);
   lvl3ship1col = 0;
   enemyAnimation(lvl3ship1poz, lvl3ship1col);
   lc.setLed(0, lvl3ship1poz, lvl3ship1col, true);
   lc.setLed(0, lvl3ship1poz, lvl3ship1col+1, true);
     
-  lvl3ship2poz = random(0, 8);
+  lvl3ship2poz = random(3, 6);
   lvl3ship2col = 1;
   enemyAnimation(lvl3ship2poz, lvl3ship2col);
   lc.setLed(0, lvl3ship2poz, lvl3ship2col, true);
   lc.setLed(0, lvl3ship2poz, lvl3ship2col+1, true);
 
-  lvl3ship3poz = random(0, 8);
+  lvl3ship3poz = random(6, 8);
   lvl3ship3col = 3;
   enemyAnimation(lvl3ship3poz, lvl3ship3col);
   lc.setLed(0, lvl3ship3poz, lvl3ship3col, true);
@@ -1332,7 +1432,7 @@ void startGame()
     readClick(shipLin);
 
     yValue = analogRead(pinY);
-    if (yValue < 250 && !joyMovedY)
+    if (yValue < lowerValue && !joyMovedY)
     {
       lc.setLed(0, shipLin, shipCol - 1, 0);
       lc.setLed(0, shipLin, shipCol, 0);
@@ -1344,7 +1444,7 @@ void startGame()
       }
       joyMovedY = true;
     }
-    else if (yValue > 750 && !joyMovedY)
+    else if (yValue > higherValue && !joyMovedY)
     {
       lc.setLed(0, shipLin, shipCol - 1, 0);
       lc.setLed(0, shipLin, shipCol, 0);
@@ -1356,7 +1456,7 @@ void startGame()
       }
       joyMovedY = true;
     }
-    if (250 <= yValue && yValue <= 750) 
+    if (lowerValue <= yValue && yValue <= higherValue) 
     {
       joyMovedY = false;
     }
@@ -1372,12 +1472,12 @@ void startGame()
     if (level == 2) 
     {
       unsigned int elapsedTimeShip1 = millis();
-      if (elapsedTimeShip1 - lastChangedship1 > 1000)
+      if (elapsedTimeShip1 - lastChangedship1 > 750)
       {
         if (lvl2ship1)
         {
           lin = random(0, 2);
-          if (lin == 0 and lvl2ship1poz > 0)
+          if (lin == 0 and lvl2ship1poz > minLin)
           {
             lc.setLed(0, lvl2ship1poz, lvl2ship1col, false);
             lc.setLed(0, lvl2ship1poz, lvl2ship1col+1, false);              
@@ -1385,7 +1485,7 @@ void startGame()
             lc.setLed(0, lvl2ship1poz, lvl2ship1col, true);
             lc.setLed(0, lvl2ship1poz, lvl2ship1col+1, true); 
           }
-          if (lin == 1 and lvl2ship1poz < 7)
+          if (lin == 1 and lvl2ship1poz < maxLin)
           {
             lc.setLed(0, lvl2ship1poz, lvl2ship1col, false);
             lc.setLed(0, lvl2ship1poz, lvl2ship1col+1, false);
@@ -1408,7 +1508,7 @@ void startGame()
         if (lvl2ship2)
         {
           lin = random(0, 2);
-          if (lin == 0 and lvl2ship2poz > 0)
+          if (lin == 0 and lvl2ship2poz > minLin)
           {
             lc.setLed(0, lvl2ship2poz, lvl2ship2col, false);
             lc.setLed(0, lvl2ship2poz, lvl2ship2col+1, false);              
@@ -1416,7 +1516,7 @@ void startGame()
             lc.setLed(0, lvl2ship2poz, lvl2ship2col, true);
             lc.setLed(0, lvl2ship2poz, lvl2ship2col+1, true); 
           }
-          if (lin == 1 and lvl2ship2poz < 7)
+          if (lin == 1 and lvl2ship2poz < maxLin)
           {
             lc.setLed(0, lvl2ship2poz, lvl2ship2col, false);
             lc.setLed(0, lvl2ship2poz, lvl2ship2col+1, false);
@@ -1451,15 +1551,15 @@ void startGame()
     if (level == 3)
     {
       unsigned int elapsedTimeShip1 = millis();
-      if (elapsedTimeShip1 - lastChangedship1 > 1750)
+      if (elapsedTimeShip1 - lastChangedship1 > 1000)
       {
         if (lvl3ship1 and playing)
         {
           bool damage = false;
-          for (int col = lvl3ship1col+2; col <= 7; col++)
+          for (int col = lvl3ship1col+2; col <= maxCol; col++)
           {
             lc.setLed(0, lvl3ship1poz, col, true);
-            tone(buzzer, 500, 10);
+            cursorSound();
             delay(10);
             lc.setLed(0, lvl3ship1poz, col, false);
             if (shipLin == lvl3ship1poz and !damage)
@@ -1484,7 +1584,7 @@ void startGame()
           if (playing)
           {
             lin = random(0, 2);
-            if (lin == 0 and lvl3ship1poz > 0)
+            if (lin == 0 and lvl3ship1poz > minLin)
             {
               lc.setLed(0, lvl3ship1poz, lvl3ship1col, false);
               lc.setLed(0, lvl3ship1poz, lvl3ship1col+1, false);              
@@ -1492,7 +1592,7 @@ void startGame()
               lc.setLed(0, lvl3ship1poz, lvl3ship1col, true);
               lc.setLed(0, lvl3ship1poz, lvl3ship1col+1, true); 
             }
-            if (lin == 1 and lvl3ship1poz < 7)
+            if (lin == 1 and lvl3ship1poz < maxLin)
             {
               lc.setLed(0, lvl3ship1poz, lvl3ship1col, false);
               lc.setLed(0, lvl3ship1poz, lvl3ship1col+1, false);
@@ -1521,10 +1621,10 @@ void startGame()
         if (lvl3ship2 and playing)
         {
           bool damage = false;
-          for (int col = lvl3ship2col+2; col <= 7; col++)
+          for (int col = lvl3ship2col+2; col <= maxCol; col++)
           {
             lc.setLed(0, lvl3ship2poz, col, true);
-            tone(buzzer, 500, 10);
+            cursorSound();
             delay(10);
             lc.setLed(0, lvl3ship2poz, col, false);
             if (shipLin == lvl3ship2poz and !damage)
@@ -1549,7 +1649,7 @@ void startGame()
           if (playing)
           {
             lin = random(0, 2);
-            if (lin == 0 and lvl3ship2poz > 0)
+            if (lin == 0 and lvl3ship2poz > minLin)
             {
               lc.setLed(0, lvl3ship2poz, lvl3ship2col, false);
               lc.setLed(0, lvl3ship2poz, lvl3ship2col+1, false);              
@@ -1557,7 +1657,7 @@ void startGame()
               lc.setLed(0, lvl3ship2poz, lvl3ship2col, true);
               lc.setLed(0, lvl3ship2poz, lvl3ship2col+1, true); 
             }
-            if (lin == 1 and lvl3ship2poz < 7)
+            if (lin == 1 and lvl3ship2poz < maxLin)
             {
               lc.setLed(0, lvl3ship2poz, lvl3ship2col, false);
               lc.setLed(0, lvl3ship2poz, lvl3ship2col+1, false);
@@ -1586,10 +1686,10 @@ void startGame()
         if (lvl3ship3 and playing)
         {
           bool damage = false;
-          for (int col = lvl3ship3col+2; col <= 7; col++)
+          for (int col = lvl3ship3col+2; col <= maxCol; col++)
           {
             lc.setLed(0, lvl3ship3poz, col, true);
-            tone(buzzer, 500, 10);
+            cursorSound();
             delay(10);
             lc.setLed(0, lvl3ship3poz, col, false);
             if (shipLin == lvl3ship3poz and !damage)
@@ -1614,7 +1714,7 @@ void startGame()
           if (playing)
           {
             lin = random(0, 2);
-            if (lin == 0 and lvl3ship3poz > 0)
+            if (lin == 0 and lvl3ship3poz > minLin)
             {
               lc.setLed(0, lvl3ship3poz, lvl3ship3col, false);
               lc.setLed(0, lvl3ship3poz, lvl3ship3col+1, false);              
@@ -1622,7 +1722,7 @@ void startGame()
               lc.setLed(0, lvl3ship3poz, lvl3ship3col, true);
               lc.setLed(0, lvl3ship3poz, lvl3ship3col+1, true); 
             }
-            if (lin == 1 and lvl3ship3poz < 7)
+            if (lin == 1 and lvl3ship3poz < maxLin)
             {
               lc.setLed(0, lvl3ship3poz, lvl3ship3col, false);
               lc.setLed(0, lvl3ship3poz, lvl3ship3col+1, false);
@@ -1669,10 +1769,10 @@ void startGame()
         if (lvl4ship1 and playing)
         {
           bool damage = false;
-          for (int col = lvl4ship1col+2; col <= 7; col++)
+          for (int col = lvl4ship1col+2; col <= maxCol; col++)
           {
             lc.setLed(0, lvl4ship1poz, col, true);
-            tone(buzzer, 500, 10);
+            cursorSound();
             delay(10);
             lc.setLed(0, lvl4ship1poz, col, false);
             if (shipLin == lvl4ship1poz and !damage)
@@ -1739,10 +1839,10 @@ void startGame()
         if (lvl4ship2 and playing)
         {
           bool damage = false;
-          for (int col = lvl4ship2col+2; col <= 7; col++)
+          for (int col = lvl4ship2col+2; col <= maxCol; col++)
           {
             lc.setLed(0, lvl4ship2poz, col, true);
-            tone(buzzer, 500, 10);
+            cursorSound();
             delay(10);
             lc.setLed(0, lvl4ship2poz, col, false);
             if (shipLin == lvl4ship2poz and !damage)
@@ -1809,10 +1909,10 @@ void startGame()
         if (lvl4ship3 and playing)
         {
           bool damage = false;
-          for (int col = lvl4ship3col+2; col <= 7; col++)
+          for (int col = lvl4ship3col+2; col <= maxCol; col++)
           {
             lc.setLed(0, lvl4ship3poz, col, true);
-            tone(buzzer, 500, 10);
+            cursorSound();
             delay(10);
             lc.setLed(0, lvl4ship3poz, col, false);
             if (shipLin == lvl4ship3poz and !damage)
@@ -1879,10 +1979,10 @@ void startGame()
         if (lvl4ship4 and playing)
         {
           bool damage = false;
-          for (int col = lvl4ship4col+2; col <= 7; col++)
+          for (int col = lvl4ship4col+2; col <= maxCol; col++)
           {
             lc.setLed(0, lvl4ship4poz, col, true);
-            tone(buzzer, 500, 10);
+            cursorSound();
             delay(10);
             lc.setLed(0, lvl4ship4poz, col, false);
             if (shipLin == lvl4ship4poz and !damage)
@@ -1982,8 +2082,8 @@ void startGame()
           
           if (charge == 5)
           {
-            bossUltimate();
-            if (shipLin != 1 or shipLin != 6 and !damage)
+            bossUltimate1();
+            if (shipLin != 1 and shipLin != 6 and !damage)
             {
               if (hp)
               {
@@ -2038,9 +2138,10 @@ void startGame()
       if (bossHp == 0)
       {
         displayVictoryScreen(shipLin);
+        level = 0;
         playing = false;
         displayScore();
-        displayMenu();
+        displayEnd();
       }
     } 
   }
@@ -2168,7 +2269,7 @@ void score()
 
   while(scoreBack == false)
   {
-    readClick(1999);
+    readClick(scoreMode);
   }
 }
 
@@ -2192,46 +2293,46 @@ void readJoystickSettings()
     xValue = analogRead(pinX);
     yValue = analogRead(pinY);
 
-    if ((xValue < 250 or xValue > 750) && !joyMovedX)
+    if ((xValue < lowerValue or xValue > higherValue) && !joyMovedX)
     {
       if (xIndex == 0) 
       {
-        tone(buzzer, 500, 10);
+        cursorSound();
         xIndex = 1;
         displaySettings();
       }
       else 
       {
-        tone(buzzer, 500, 10);
+        cursorSound();
         xIndex = 0;
         displaySettings();
       }
       joyMovedX = true;
     }
     
-    if ((yValue < 250 or yValue > 750) && !joyMovedY)
+    if ((yValue < lowerValue or yValue > higherValue) && !joyMovedY)
     {
       if (yIndex == 0) 
       {
-        tone(buzzer, 500, 10);
+        cursorSound();
         yIndex = 1;
         displaySettings();
       }
       else 
       {
-        tone(buzzer, 500, 10);
+        cursorSound();
         yIndex = 0;
         displaySettings();
       }
       joyMovedY = true;
     }
 
-    if (250 <= xValue && xValue <= 750) 
+    if (lowerValue <= xValue && xValue <= higherValue) 
     {
       joyMovedX = false;
     } 
     
-    if (250 <= yValue && yValue <= 750) 
+    if (lowerValue <= yValue && yValue <= higherValue) 
     {
       joyMovedY = false;
     } 
@@ -2354,7 +2455,7 @@ void settings()
   while (!settingsBack)
   {
     readJoystickSettings();
-    readClick(2000);
+    readClick(settingsMenuMode);
   }
 }
 
@@ -2363,7 +2464,7 @@ void nameSettings()
   nameBack = false;
 
   cursor = 0;
-  cursorMode = 2001;
+  nameCursorMode = nameFirstLetterMode;
   done = false;
   
   lcd.clear();
@@ -2378,9 +2479,8 @@ void nameSettings()
     xValue = analogRead(pinX);
     yValue = analogRead(pinY);
     swState = digitalRead(pinSW);
-//    int buttonvalue = analogRead(button);
   
-    if (xValue < 250)
+    if (xValue < lowerValue)
     {
       unsigned int elapsedTime = millis();
       if (elapsedTime - lastChanged > 300)
@@ -2394,7 +2494,7 @@ void nameSettings()
       }
     }
 
-    if (xValue > 750)
+    if (xValue > higherValue)
     {
       unsigned int elapsedTime = millis();
       if (elapsedTime - lastChanged > 300)
@@ -2410,10 +2510,10 @@ void nameSettings()
 
     lcd.print(alphabet[alphabetCounter]);
     
-    readClick(cursorMode);
+    readClick(nameCursorMode);
     lcd.setCursor(cursor, 1);
 
-    if (cursorMode == 2004)
+    if (nameCursorMode == nameWaitMode)
     {
       while (!done)
       {
@@ -2433,7 +2533,7 @@ void nameSettings()
           } 
           lastChanged = elapsedTime;
         }
-        readClick(2005);
+        readClick(nameStartMode);
       }
     }
   }
@@ -2455,46 +2555,46 @@ void readJoystickBrightness()
     xValue = analogRead(pinX);
     yValue = analogRead(pinY);
 
-    if ((xValue < 250 or xValue > 750) && !joyMovedX)
+    if ((xValue < lowerValue or xValue > higherValue) && !joyMovedX)
     {
       if (xIndex == 0) 
       {
-        tone(buzzer, 500, 10);
+        cursorSound();
         xIndex = 1;
         displayBrightness();
       }
       else 
       {
-        tone(buzzer, 500, 10);
+        cursorSound();
         xIndex = 0;
         displayBrightness();
       }
       joyMovedX = true;
     }
     
-    if ((yValue < 250 or yValue > 750) && !joyMovedY)
+    if ((yValue < lowerValue or yValue > higherValue) && !joyMovedY)
     {
       if (yIndex == 0) 
       {
-        tone(buzzer, 500, 10);
+        cursorSound();
         yIndex = 1;
         displayBrightness();
       }
       else 
       {
-        tone(buzzer, 500, 10);
+        cursorSound();
         yIndex = 0;
         displayBrightness();
       }
       joyMovedY = true;
     }
 
-    if (250 <= xValue && xValue <= 750) 
+    if (lowerValue <= xValue && xValue <= higherValue) 
     {
       joyMovedX = false;
     } 
     
-    if (250 <= yValue && yValue <= 750) 
+    if (lowerValue <= yValue && yValue <= higherValue) 
     {
       joyMovedY = false;
     } 
@@ -2569,15 +2669,15 @@ void brightnessSettings()
   while (!brightnessBack)
   {
     readJoystickBrightness();
-    readClick(2009);
+    readClick(brightnessMenuMode);
   }
 }
 
 void matrixBrightnessSettings()
 {    
-  for (int lin = 0; lin <= 15; lin++)
+  for (int lin = 0; lin <= maxLin; lin++)
   {
-    for (int col = 0; col <= 15; col++)
+    for (int col = 0; col <= maxCol; col++)
     {
       lc.setLed(0, lin, col, true);
     }
@@ -2600,9 +2700,9 @@ void matrixBrightnessSettings()
   {
     yValue = analogRead(pinY);
 
-    if (yValue < 250 && !joyMovedY)
+    if (yValue < lowerValue && !joyMovedY)
     {
-      tone(buzzer, 500, 10);
+      cursorSound();
       nameIndex++;
       lcd.setCursor(4, 1);
       lcd.print("Default");
@@ -2615,9 +2715,9 @@ void matrixBrightnessSettings()
       joyMovedY = true;
     }
 
-    if (yValue > 750 && !joyMovedY)
+    if (yValue > higherValue && !joyMovedY)
     {
-      tone(buzzer, 500, 10);
+      cursorSound();
       nameIndex--;
       lcd.setCursor(4, 1);
       lcd.print("Default");
@@ -2630,7 +2730,7 @@ void matrixBrightnessSettings()
       joyMovedY = true;
     }
 
-    if (250 <= yValue && yValue <= 750) 
+    if (lowerValue <= yValue && yValue <= higherValue) 
     {
       joyMovedY = false;
     }
@@ -2639,7 +2739,7 @@ void matrixBrightnessSettings()
     {
       xValue = analogRead(pinX);
       
-      if (xValue < 250) 
+      if (xValue < lowerValue) 
       {
         unsigned int elapsedTime = millis();
         if (elapsedTime - lastChanged > 400)
@@ -2653,7 +2753,7 @@ void matrixBrightnessSettings()
         }
       }
 
-      if (xValue > 750 and nameIndex == 0)
+      if (xValue > higherValue and nameIndex == 0)
       {
         unsigned int elapsedTime = millis();
         if (elapsedTime - lastChanged > 400)
@@ -2694,7 +2794,7 @@ void matrixBrightnessSettings()
         } 
         lastChanged = elapsedTime;
       }
-      readClick(2008);
+      readClick(defaultMatrixBrightnessMode);
       brightnessLevel = brightness;
     }
 
@@ -2716,7 +2816,7 @@ void matrixBrightnessSettings()
         } 
         lastChanged = elapsedTime;
       }
-      readClick(5000);
+      readClick(backToBrightnessMode);
     }
   }
 }
@@ -2740,9 +2840,9 @@ void lcdBrightnessSettings()
   {
     yValue = analogRead(pinY);
 
-    if (yValue < 250 && !joyMovedY)
+    if (yValue < lowerValue && !joyMovedY)
     {
-      tone(buzzer, 500, 10);
+      cursorSound();
       nameIndex++;
       lcd.setCursor(4, 1);
       lcd.print("Default");
@@ -2755,9 +2855,9 @@ void lcdBrightnessSettings()
       joyMovedY = true;
     }
 
-    if (yValue > 750 && !joyMovedY)
+    if (yValue > higherValue && !joyMovedY)
     {
-      tone(buzzer, 500, 10);
+      cursorSound();
       nameIndex--;
       lcd.setCursor(4, 1);
       lcd.print("Default");
@@ -2770,7 +2870,7 @@ void lcdBrightnessSettings()
       joyMovedY = true;
     }
 
-    if (250 <= yValue && yValue <= 750) 
+    if (lowerValue <= yValue && yValue <= higherValue) 
     {
       joyMovedY = false;
     }
@@ -2779,7 +2879,7 @@ void lcdBrightnessSettings()
     {
       xValue = analogRead(pinX);
       
-      if (xValue < 250) 
+      if (xValue < lowerValue) 
       {
         unsigned int elapsedTime = millis();
         if (elapsedTime - lastChanged > 400)
@@ -2793,7 +2893,7 @@ void lcdBrightnessSettings()
         }
       }
 
-      if (xValue > 750 and nameIndex == 0)
+      if (xValue > higherValue)
       {
         unsigned int elapsedTime = millis();
         if (elapsedTime - lastChanged > 400)
@@ -2834,7 +2934,7 @@ void lcdBrightnessSettings()
         } 
         lastChanged = elapsedTime;
       }
-      readClick(70);
+      readClick(defaultLcdBrightnessMode);
       lcdBrightnessLevel = lcdBrightness;
     }
 
@@ -2856,7 +2956,7 @@ void lcdBrightnessSettings()
         } 
         lastChanged = elapsedTime;
       }
-      readClick(5000);
+      readClick(backToBrightnessMode);
     }
   }
 }
@@ -2880,8 +2980,9 @@ void contrastSettings()
   {
     yValue = analogRead(pinY);
 
-    if (yValue < 250 && !joyMovedY)
+    if (yValue < lowerValue && !joyMovedY)
     {
+      cursorSound();
       nameIndex++;
       lcd.setCursor(4, 1);
       lcd.print("Default");
@@ -2894,8 +2995,9 @@ void contrastSettings()
       joyMovedY = true;
     }
 
-    if (yValue > 750 && !joyMovedY)
+    if (yValue > higherValue && !joyMovedY)
     {
+      cursorSound();
       nameIndex--;
       lcd.setCursor(4, 1);
       lcd.print("Default");
@@ -2908,7 +3010,7 @@ void contrastSettings()
       joyMovedY = true;
     }
 
-    if (250 <= yValue && yValue <= 750) 
+    if (lowerValue <= yValue && yValue <= higherValue) 
     {
       joyMovedY = false;
     }
@@ -2917,7 +3019,7 @@ void contrastSettings()
     {
       xValue = analogRead(pinX);
       
-      if (xValue < 250) 
+      if (xValue < lowerValue) 
       {
         unsigned int elapsedTime = millis();
         if (elapsedTime - lastChanged > 100)
@@ -2931,7 +3033,7 @@ void contrastSettings()
         }
       }
 
-      if (xValue > 750 and nameIndex == 0)
+      if (xValue > higherValue)
       {
         unsigned int elapsedTime = millis();
         if (elapsedTime - lastChanged > 100)
@@ -2976,7 +3078,7 @@ void contrastSettings()
         } 
         lastChanged = elapsedTime;
       }
-      readClick(2006);
+      readClick(defaultContrastMode);
       contrastLevel = contrast;
     }
 
@@ -2998,7 +3100,7 @@ void contrastSettings()
         } 
         lastChanged = elapsedTime;
       }
-      readClick(2007);
+      readClick(backToSettingsMode);
     }
   }
 }
@@ -3077,7 +3179,7 @@ void about()
       lastChanged = elapsedTime;
     }
 
-    readClick(3000);
+    readClick(aboutMode);
   }
 
   lc.clearDisplay(0);
