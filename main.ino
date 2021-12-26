@@ -533,7 +533,7 @@ void readClick(int mode)
             if (yIndex == 0)
             {
               nameSet = false;
-              level = 5; //aici
+              level = 1;
               startGame();
             }
             else
@@ -978,7 +978,7 @@ void displayEnd()
   lc.setLed(0, 5, 2, HIGH);
   delay(200);
   lc.setLed(0, 3, 2, LOW);
-  lc.setLed(0, 4, 1, LOW); //aici
+  lc.setLed(0, 4, 1, LOW);
   lc.setLed(0, 4, 3, LOW);
   lc.setLed(0, 5, 2, LOW);
   
