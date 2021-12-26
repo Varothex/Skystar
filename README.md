@@ -8,7 +8,7 @@ The game is very simple, you control a small spaceship at the bottom of the LCD 
 - the forth level adds four enemies at the same time that follow you with the intent to kill you!
 - if you survived through all this, at the fifth and final level you will encounter the boss, that has two standard attacks and a special deadly attack! Beat him and you beat the game!
 
-<b>Video:</b><a href="" target="_blank"> A video demonstration. </a>
+<b>Video:</b><a href="" target="_blank"> A demonstration. </a>
 
 # Setup:
 <b>Components (not including wires):</b>
@@ -25,7 +25,7 @@ The game is very simple, you control a small spaceship at the bottom of the LCD 
 - 1 joystick.
 
 <details>
-  <summary>Pictures</summary>
+<summary>Pictures</summary>
 ![signal-2021-12-26-020334_001](https://user-images.githubusercontent.com/61534490/147395861-a42232b8-db18-4759-b25b-5c05fdb6a2c1.jpeg)
 ![signal-2021-12-26-020334_002](https://user-images.githubusercontent.com/61534490/147395863-40552ba9-d245-4a6d-856d-d92363f4f82f.jpeg)
 ![signal-2021-12-26-020334_003](https://user-images.githubusercontent.com/61534490/147395865-11419652-8777-4272-bca0-8bb347942e74.jpeg)
