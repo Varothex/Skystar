@@ -8,7 +8,7 @@ The game is very simple, you control a small spaceship at the bottom of the LCD 
 - the forth level adds four enemies at the same time that follow you with the intent to kill you!
 - if you survived through all this, at the fifth and final level you will encounter the boss, that has two standard attacks and a special deadly attack! Beat him and you beat the game!
 
-<b>Video:</b><a href="" target="_blank"> A demonstration. </a>
+<b>Video:</b><a href="https://youtu.be/3jfF93CnAGc" target="_blank"> A demonstration. </a>
 
 # Setup:
 <b>Components (not including wires):</b>
