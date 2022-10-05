@@ -25,6 +25,50 @@ The game is very simple, you control a small spaceship at the bottom of the LCD 
 - 1 joystick.
 
 <details>
+<summary>How to connect them:</summary>
+0 -> SW
+2 -> D7
+3 -> D6
+4 -> D5
+5 -> v0
+6 -> A (rezistor)
+7 -> D4
+8 -> E
+9 -> buzzer (rezistor)
+10 -> 12
+11 -> 13
+12 -> 1
+13 -> RS
+A0 -> OX
+A1 -> OY
+
+Shift Register -> Matrix
+1 -> 12 (ard)
+2 -> 9
+3 -> 1
+4 -> GND
+5 -> 2
+6 -> 8
+7 -> 12
+8 -> 5
+9 -> GND
+10 -> 7
+11 -> 14
+12 -> 10 (ard)
+13 -> 11 (ard)
+14 -> 3
+15 -> 15
+16 -> 4
+17 -> 16
+18 -> rezistor 5V
+19 -> 5V
+20 -> 10
+21 -> 11
+22 -> 13
+23 -> 6
+</details>
+
+<details>
 <summary>Pictures</summary>
   
 ![signal-2021-12-26-020334_001](https://user-images.githubusercontent.com/61534490/147395861-a42232b8-db18-4759-b25b-5c05fdb6a2c1.jpeg)
