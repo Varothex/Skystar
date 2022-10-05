@@ -26,7 +26,7 @@ The game is very simple, you control a small spaceship at the bottom of the LCD 
 
 <details>
 <summary>How to connect them:</summary>
-- 0 to SW;
+- 0 -> SW;
 - 2 -> D7;
 - 3 -> D6;
 - 4 -> D5;
